@@ -1,24 +1,32 @@
- [![Build Status](https://travis-ci.org/njhazelh/nick-jones.me.svg?branch=master)](https://travis-ci.org/njhazelh/nick-jones.me.svg?branch=master)
- 
 # nick-jones.me
-nick-jones.me is my personal website.  It's been rather simple for a while, but
-the plan is to much more power to it.
 
-## Architecture
-### Frontend
-- Backbone
-- SCSS
-- HTML
-- Gulp
-- JavaScript (ES6?)
+Personal site. Static, built with [Astro](https://astro.build), deployed to GitHub Pages by `.github/workflows/site.yml`.
 
-### Backend
-Something, when I get around to it.  Maybe Flask. Maybe Haskell.
+## Where things live
 
-## Build
-To build just run `gulp` in the project directory.  This will require that
-you have nodejs v0.12, and gulp installed. SCSS also needs to be installed via the
-ruby gem.  See `.travis.yml` for hints.
+| To change | Edit |
+| --- | --- |
+| Role, employer, dates, pitch, proof points, links | `src/data/profile.ts` (the only file a job change touches) |
+| Nav items | `src/data/nav.ts` (an item shows once `live: true`) |
+| Type, colour, spacing | `src/styles/tokens.css` |
+| Page copy | `src/pages/*.astro` |
 
-### Continuous Integration
-This project uses Travis.
+Durations such as "nearly nine years" are computed from role dates at build time, so they never go stale.
+
+## Commands
+
+```sh
+npm ci
+npm run dev        # local server at http://localhost:4321
+npm run build      # static output in dist/
+npm run check      # stale-copy lint, third-party request scan, 100 KB home-page budget
+```
+
+CI also runs axe (WCAG 2.1 AA, light and dark), Lighthouse (fails under 95 in any category) and prints the resume to `/resume.pdf`. Those need a browser, so they run only in CI.
+
+## Rules the checks enforce
+
+- No "currently", "recently", "this year", "weekly" or "latest post" in copy. Facts that date go in the data file.
+- No request to any third-party host. Fonts are self-hosted (Source Serif 4, OFL, `public/fonts/`).
+- No phone number anywhere in the build.
+- Values marked `TODO:` in the data file are printed as warnings until confirmed.

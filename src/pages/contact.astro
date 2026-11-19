@@ -1,0 +1,43 @@
+---
+import Base from '../layouts/Base.astro';
+import { profile } from '../data/profile';
+
+const { email, github, linkedin } = profile.links;
+const links = [
+  email && { label: 'Email', href: `mailto:${email}`, text: email },
+  github && { label: 'GitHub', href: github, text: github.replace('https://', '') },
+  linkedin && { label: 'LinkedIn', href: linkedin, text: linkedin.replace('https://www.', '').replace('https://', '') },
+].filter(Boolean) as { label: string; href: string; text: string }[];
+---
+
+<Base title="Contact" description={`How to reach ${profile.name}.`}>
+  <h1>Contact</h1>
+  <p class="lede">Email reaches me fastest.</p>
+
+  <dl>
+    {
+      links.map((l) => (
+        <>
+          <dt>{l.label}</dt>
+          <dd>
+            <a href={l.href}>{l.text}</a>
+          </dd>
+        </>
+      ))
+    }
+  </dl>
+</Base>
+
+<style>
+  dl {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 0.5rem 1.5rem;
+  }
+  dt {
+    font-weight: 600;
+  }
+  dd {
+    margin: 0;
+  }
+</style>
