@@ -1,0 +1,59 @@
+# Browser checks on every pull request and push to master.
+# Deploys are not done here: DigitalOcean App Platform builds and deploys
+# master through its GitHub integration (see .do/app.yaml).
+name: checks
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    env:
+      ASTRO_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '26'
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Source and output checks (stale copy, third-party requests, page budget)
+        run: npm run check
+
+      - name: Install browser tooling (not site dependencies)
+        run: |
+          npm install --no-save playwright@1.65 axe-core@4
+          npx playwright install --with-deps chromium
+
+      - name: Accessibility (axe, WCAG 2.1 AA, every page in the sitemap, light and dark)
+        run: |
+          npx astro preview --port 4321 &
+          for i in $(seq 30); do curl -sf http://localhost:4321/ >/dev/null && break; sleep 1; done
+          npm run check:browser
+
+      - name: Lighthouse (fails under 95 in any category)
+        run: npx --yes @lhci/cli@0.16.x autorun
+
+      - name: Keep Lighthouse reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse
+          path: .lighthouseci
+          if-no-files-found: ignore

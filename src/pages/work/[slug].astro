@@ -1,0 +1,52 @@
+---
+import { render } from 'astro:content';
+import Article from '../../layouts/Article.astro';
+import { caseStudies, hiddenBecause } from '../../lib/content';
+
+export async function getStaticPaths() {
+  return (await caseStudies()).map((entry) => ({ params: { slug: entry.id }, props: { entry } }));
+}
+
+const { entry } = Astro.props;
+
+// The spec's one rule for case studies: each ends by saying what went wrong or
+// what I'd change. Credits go up top so that section stays last. A published case study without that section fails the build.
+const LAST = /^what went wrong or I'd change$/i;
+const { headings } = await render(entry);
+const sections = headings.filter((h) => h.depth === 2);
+if (!hiddenBecause(entry) && !LAST.test(sections.at(-1)?.text.replace('’', "'") ?? '')) {
+  throw new Error(
+    `src/content/work/${entry.id}.md: a case study must end with a "## What went wrong or I'd change" section`,
+  );
+}
+---
+
+<Article entry={entry}>
+  <Fragment slot="before">
+    <p class="figure-line">
+      <span class="figure">{entry.data.figure}</span>
+      <span class="label">{entry.data.figureLabel}</span>
+    </p>
+    <p class="credits"><strong>What others did:</strong> {entry.data.credits}</p>
+  </Fragment>
+</Article>
+
+<style>
+  .figure-line {
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    padding-block: calc(var(--unit) / 2);
+    border-block: 1px solid var(--rule);
+  }
+  .figure {
+    font-size: var(--step-3);
+    line-height: 1;
+    color: var(--accent);
+    font-variant-numeric: lining-nums tabular-nums;
+  }
+  .credits {
+    color: var(--fg-muted);
+    font-size: var(--step--1);
+  }
+</style>

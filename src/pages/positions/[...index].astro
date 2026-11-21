@@ -1,0 +1,100 @@
+---
+// What I stand for: one sentence per thesis, each linked to the essay that
+// argues it and the tag that collects its evidence. Built only once at least
+// one position is published.
+import { getEntry } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import { positions, tagged, hrefFor, hiddenBecause, formatDate, isoDay, SHOW_UNPUBLISHED } from '../../lib/content';
+
+export async function getStaticPaths() {
+  const entries = await positions();
+  return entries.length ? [{ params: { index: undefined }, props: { entries } }] : [];
+}
+const { entries } = Astro.props;
+const tags = await tagged();
+
+const rows = await Promise.all(
+  entries.map(async (p) => {
+    const essay = p.data.essay ? await getEntry(p.data.essay) : undefined;
+    // Link an essay or a newer position only once it is itself public.
+    const isLive = (e: Parameters<typeof hiddenBecause>[0] | undefined) => e && (SHOW_UNPUBLISHED || !hiddenBecause(e));
+    const newer = p.data.supersededBy ? await getEntry(p.data.supersededBy) : undefined;
+    return {
+      p,
+      essay: isLive(essay) ? essay : undefined,
+      newer: isLive(newer) ? newer : undefined,
+      count: tags.get(p.data.tag)?.length ?? 0,
+    };
+  }),
+);
+---
+
+<Base title="Positions" description="The positions I argue, each backed by evidence from my own work.">
+  <h1>Positions</h1>
+  <p class="lede">
+    Things I believe about running large systems, each phrased so a reasonable engineer could disagree, and each
+    argued with evidence from work I did.
+  </p>
+
+  <ol class="positions">
+    {
+      rows.map(({ p, essay, count, newer }) => (
+        <li id={p.data.tag} class={newer ? 'superseded' : undefined}>
+          <p class="thesis">{p.data.thesis}</p>
+          {newer && (
+            <p class="muted">
+              I've changed my mind on this. See <a href={`#${newer.data.tag}`}>the newer position</a>.
+            </p>
+          )}
+          <p class="links muted">
+            {essay && (
+              <>
+                The argument: <a href={hrefFor(essay)}>{essay.data.title}</a>.{' '}
+              </>
+            )}
+            {count > 0 && (
+              <a href={`/tags/${p.data.tag}/`}>
+                {count} {count === 1 ? 'piece' : 'pieces'} of evidence
+              </a>
+            )}
+            {!essay && count === 0 && 'Essay in progress.'}
+            {p.data.updated && (
+              <>
+                {' '}
+                Revised <time datetime={isoDay(p.data.updated)}>{formatDate(p.data.updated)}</time>.
+              </>
+            )}
+            {hiddenBecause(p) && <span class="flag"> {hiddenBecause(p)}.</span>}
+          </p>
+        </li>
+      ))
+    }
+  </ol>
+</Base>
+
+<style>
+  .positions {
+    padding-left: 1.5rem;
+  }
+  .positions li {
+    margin-bottom: var(--unit);
+  }
+  .positions li::marker {
+    color: var(--accent);
+    font-weight: 600;
+  }
+  .thesis {
+    margin-bottom: 0.25rem;
+    font-size: var(--step-1);
+    line-height: 1.4;
+  }
+  .superseded .thesis {
+    color: var(--fg-muted);
+  }
+  .links {
+    font-size: var(--step--1);
+  }
+  .flag {
+    color: var(--accent);
+  }
+</style>

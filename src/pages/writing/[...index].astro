@@ -1,0 +1,35 @@
+---
+// The only place on the site that lists posts by date. Built only when there
+// is at least one post.
+import Base from '../../layouts/Base.astro';
+import EntryList from '../../components/EntryList.astro';
+import { posts, tagged } from '../../lib/content';
+
+export async function getStaticPaths() {
+  const entries = await posts();
+  return entries.length ? [{ params: { index: undefined }, props: { entries } }] : [];
+}
+const { entries } = Astro.props;
+const tags = [...(await tagged()).keys()].sort();
+---
+
+<Base title="Writing" description="Essays, notes and links on running large production systems.">
+  <h1>Writing</h1>
+  <p class="lede">Essays argue a position. Notes extend one. Links point at something worth reading, with my take.</p>
+  {
+    tags.length > 0 && (
+      <p class="muted">
+        By topic:{' '}
+        {tags.map((t, i) => (
+          <>
+            {i > 0 && ', '}
+            <a href={`/tags/${t}/`}>{t.replaceAll('-', ' ')}</a>
+          </>
+        ))}
+        . <a href="/rss.xml">RSS feed</a>.
+      </p>
+    )
+  }
+  {tags.length === 0 && <p class="muted"><a href="/rss.xml">RSS feed</a>.</p>}
+  <EntryList entries={entries} />
+</Base>

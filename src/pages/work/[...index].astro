@@ -1,0 +1,21 @@
+---
+// Built only when there is at least one case study, so /work/ never shows empty.
+import Base from '../../layouts/Base.astro';
+import EntryList from '../../components/EntryList.astro';
+import { caseStudies } from '../../lib/content';
+
+export async function getStaticPaths() {
+  const entries = await caseStudies();
+  return entries.length ? [{ params: { index: undefined }, props: { entries } }] : [];
+}
+const { entries } = Astro.props;
+---
+
+<Base title="Work" description="Case studies of production systems I made faster, steadier or easier to run, written as postmortems.">
+  <h1>Work</h1>
+  <p class="lede">
+    Case studies, written the way I'd write a postmortem: what happened, how it was found, what fixed it, what stops it
+    coming back, and what I'd do differently.
+  </p>
+  <EntryList entries={entries} />
+</Base>

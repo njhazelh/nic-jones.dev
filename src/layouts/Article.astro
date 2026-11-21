@@ -1,0 +1,139 @@
+---
+// One layout for essays, notes, links and case studies. The page shows when it
+// was written, when it last changed in substance, and, if I've since changed
+// my mind, where the newer thinking is.
+import { getEntry, render, type CollectionEntry } from 'astro:content';
+import Base from './Base.astro';
+import { profile } from '../data/profile';
+import { hrefFor, formatDate, isoDay, hiddenBecause, FORMAT_LABEL, formatOf, SHOW_UNPUBLISHED } from '../lib/content';
+
+interface Props {
+  entry: CollectionEntry<'work'> | CollectionEntry<'writing'>;
+}
+const { entry } = Astro.props;
+const { data } = entry;
+const { Content } = await render(entry);
+// Point at the newer piece only once it is itself public, so the link always lands.
+const successor = data.supersededBy ? await getEntry(data.supersededBy) : undefined;
+const newer = successor && (SHOW_UNPUBLISHED || !hiddenBecause(successor)) ? successor : undefined;
+const canonical = new URL(hrefFor(entry), Astro.site).href;
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': entry.collection === 'work' ? 'Article' : 'BlogPosting',
+  headline: data.title,
+  description: data.description,
+  datePublished: isoDay(data.date),
+  ...(data.updated && { dateModified: isoDay(data.updated) }),
+  author: { '@type': 'Person', name: profile.fullName, url: profile.site },
+  mainEntityOfPage: canonical,
+  ...(data.tags.length && { keywords: data.tags.join(', ') }),
+};
+---
+
+<Base
+  title={data.title}
+  description={data.description}
+  jsonLd={jsonLd}
+  article={{ published: data.date, modified: data.updated }}
+  hiddenBecause={hiddenBecause(entry)}
+>
+  <article>
+    <header>
+      <p class="kicker muted">{FORMAT_LABEL[formatOf(entry)]}</p>
+      <h1>{data.title}</h1>
+      <p class="dates muted">
+        <time datetime={isoDay(data.date)}>{formatDate(data.date)}</time>
+        {data.updated && <>, updated <time datetime={isoDay(data.updated)}>{formatDate(data.updated)}</time></>}
+      </p>
+      {
+        newer && (
+          <p class="superseded" role="note">
+            I've changed my mind since writing this. The newer thinking is in{' '}
+            <a href={hrefFor(newer)}>{newer.data.title}</a>.
+          </p>
+        )
+      }
+      {
+        entry.collection === 'writing' && entry.data.link && (
+          <p class="source">
+            Responding to <a href={entry.data.link}>{new URL(entry.data.link).hostname.replace(/^www\./, '')}</a>
+          </p>
+        )
+      }
+    </header>
+
+    <slot name="before" />
+    <div class="prose">
+      <Content />
+    </div>
+    <slot name="after" />
+
+    {
+      data.tags.length > 0 && (
+        <footer class="tags">
+          <p>
+            Filed under{' '}
+            {data.tags.map((t, i) => (
+              <>
+                {i > 0 && ', '}
+                <a href={`/tags/${t}/`}>{t.replaceAll('-', ' ')}</a>
+              </>
+            ))}
+            .
+          </p>
+        </footer>
+      )
+    }
+  </article>
+</Base>
+
+<style>
+  .kicker {
+    margin: 0;
+    font-size: var(--step--1);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .dates {
+    font-size: var(--step--1);
+  }
+  .superseded {
+    padding-left: 1rem;
+    border-left: 3px solid var(--accent);
+  }
+  .tags {
+    margin-top: calc(var(--unit) * 2);
+    padding-top: calc(var(--unit) / 2);
+    border-top: 1px solid var(--rule);
+    color: var(--fg-muted);
+    font-size: var(--step--1);
+  }
+  .prose :global(blockquote) {
+    margin-inline: 0;
+    padding-left: 1rem;
+    border-left: 3px solid var(--rule);
+    color: var(--fg-muted);
+  }
+  .prose :global(pre) {
+    overflow-x: auto;
+    padding: 0.75rem 1rem;
+    background: var(--bg-sunk);
+  }
+  .prose :global(table) {
+    width: 100%;
+    border-collapse: collapse;
+    font-variant-numeric: lining-nums tabular-nums;
+  }
+  .prose :global(th),
+  .prose :global(td) {
+    padding: 0.25rem 0.75rem 0.25rem 0;
+    border-bottom: 1px solid var(--rule);
+    text-align: left;
+    vertical-align: top;
+  }
+  .prose :global(img) {
+    max-width: 100%;
+    height: auto;
+  }
+</style>

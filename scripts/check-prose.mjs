@@ -1,7 +1,9 @@
 // Source checks that keep the site from going stale.
 //   Errors:   copy pinned to a moment ("currently", "recently", "this year"),
 //             cadence promises ("weekly", "latest post").
-//   Warnings: unconfirmed TODO values in the data file, passed reviewBy dates.
+//             a TODO left in a content entry that isn't a draft (it would ship).
+//   Warnings: unconfirmed TODO values in the data file and in drafts, passed
+//             reviewBy dates.
 import { readFile, readdir } from 'node:fs/promises';
 import { join, relative } from 'node:path';
 
@@ -54,8 +56,13 @@ for (const dir of SCAN) {
         if (m) errors.push(`${rel}:${i + 1} stale or cadence wording "${m[0]}"`);
       }
     });
+    const isEntry = rel.startsWith('src/content/') && rel.endsWith('.md');
+    const frontmatter = src.match(/^---\r?\n([\s\S]*?)\r?\n---/)?.[1] ?? '';
+    const isDraft = /^draft:\s*true\b/m.test(frontmatter);
     src.split('\n').forEach((line, i) => {
-      if (/TODO:/.test(line)) warnings.push(`${rel}:${i + 1} ${line.trim()}`);
+      if (!/TODO/.test(line)) return;
+      if (isEntry && !isDraft) errors.push(`${rel}:${i + 1} TODO in an entry that will publish; finish it or set draft: true`);
+      else if (/TODO:/.test(line)) warnings.push(`${rel}:${i + 1} ${line.trim()}`);
     });
   }
 }
