@@ -6,6 +6,8 @@ started: 2026-11
 url: https://nick-jones.me
 repo: https://github.com/njhazelh/nick-jones.me
 stack: [Astro, DigitalOcean App Platform]
+screenshot: ./nick-jones-me.png
+screenshotAlt: The home page of this site on a phone, showing the one-line pitch and the start of the background.
 draft: true # TODO: check the write-up, then remove draft
 ---
 

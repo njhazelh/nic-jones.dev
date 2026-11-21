@@ -12,26 +12,35 @@ const tag = z.string().regex(/^[a-z0-9-]+$/, 'tags are lower-case-with-hyphens')
 /** Apps and projects I'm building or have built. */
 const projects = defineCollection({
   loader: glob({ pattern: '**/*.md', base: './src/content/projects' }),
-  schema: z.object({
-    title: z.string(),
-    /** One sentence: what it is and who it's for. */
-    description: z.string(),
-    status: z.enum(['active', 'shipped', 'paused', 'retired']),
-    /** When it started, as YYYY-MM. Orders projects within a status. */
-    started: z.string().regex(/^\d{4}-\d{2}$/, 'started is YYYY-MM'),
-    /** Where to use it. */
-    url: z.url().optional(),
-    /** Source, only if the repository is public. */
-    repo: z.url().optional(),
-    /** Platform and main tools, e.g. ["Android", "Kotlin", "Strava API"]. */
-    stack: z.array(z.string()).default([]),
-    /** Pinned projects are linked from the home page. */
-    pinned: z.boolean().default(false),
-    /** Drafts never reach the production build. They show in `npm run dev`. */
-    draft: z.boolean().default(false),
-    /** Set when the write-up changes in substance. */
-    updated: z.coerce.date().optional(),
-  }),
+  schema: ({ image }) =>
+    z.object({
+      title: z.string(),
+      /** One sentence: what it is and who it's for. */
+      description: z.string(),
+      status: z.enum(['active', 'shipped', 'paused', 'retired']),
+      /** When it started, as YYYY-MM. Orders projects within a status. */
+      started: z.string().regex(/^\d{4}-\d{2}$/, 'started is YYYY-MM'),
+      /** Where to use it. */
+      url: z.url().optional(),
+      /** Source, only if the repository is public. */
+      repo: z.url().optional(),
+      /** Platform and main tools, e.g. ["Android", "Kotlin", "Strava API"]. */
+      stack: z.array(z.string()).default([]),
+      /** Pinned projects are linked from the home page. */
+      pinned: z.boolean().default(false),
+      /** Drafts never reach the production build. They show in `npm run dev`. */
+      draft: z.boolean().default(false),
+      /** Set when the write-up changes in substance. */
+      updated: z.coerce.date().optional(),
+      /**
+       * A screenshot next to the Markdown file, e.g. `./loadmatter.png`. Shown on
+       * the project page, converted to AVIF and WebP at build time.
+       */
+      screenshot: image().optional(),
+      /** What the screenshot shows, for screen readers. Required with `screenshot`. */
+      screenshotAlt: z.string().optional(),
+    })
+      .refine((d) => !d.screenshot || d.screenshotAlt, { message: '`screenshot` needs `screenshotAlt`', path: ['screenshotAlt'] }),
 });
 
 /** Blog posts: essays, notes and links. */

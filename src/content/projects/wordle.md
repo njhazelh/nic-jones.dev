@@ -1,10 +1,12 @@
 ---
-title: Wordle remix
+title: Wordler
 description: A daily five-letter word game in the style of Wordle, with shareable results and a high-contrast mode.
 status: shipped
 started: 2022-02
 url: https://wordle.nick-jones.me
 stack: [React, Redux Toolkit, TypeScript, Vite]
+screenshot: ./wordle.png
+screenshotAlt: The Wordler board on a phone, an empty six-by-five grid above an on-screen keyboard.
 draft: true # TODO: check the write-up, then remove draft
 ---
 

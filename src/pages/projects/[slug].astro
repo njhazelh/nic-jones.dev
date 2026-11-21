@@ -1,6 +1,7 @@
 ---
 // A project: what it is, where to use it, the write-up, and every post about it.
 import { render } from 'astro:content';
+import { Picture } from 'astro:assets';
 import Base from '../../layouts/Base.astro';
 import EntryList from '../../components/EntryList.astro';
 import { profile } from '../../data/profile';
@@ -66,6 +67,22 @@ const jsonLd = {
     </header>
 
     {
+      data.screenshot && (
+        <figure class="shot">
+          <Picture
+            src={data.screenshot}
+            alt={data.screenshotAlt!}
+            formats={['avif', 'webp']}
+            widths={[280, 560]}
+            sizes="280px"
+            loading="eager"
+            fetchpriority="high"
+          />
+        </figure>
+      )
+    }
+
+    {
       hasWriteUp && (
         <div class="prose">
           <Content />
@@ -105,5 +122,16 @@ const jsonLd = {
   .facts dd {
     margin: 0;
     overflow-wrap: anywhere;
+  }
+  .shot {
+    margin-inline: 0;
+  }
+  .shot :global(img) {
+    display: block;
+    width: 280px;
+    max-width: 100%;
+    height: auto;
+    border: 1px solid var(--rule);
+    border-radius: 6px;
   }
 </style>
