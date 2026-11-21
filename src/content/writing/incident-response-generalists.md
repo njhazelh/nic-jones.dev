@@ -10,13 +10,14 @@ tags: [incident-response]
 
 <!-- Flagship essay, 1,500 to 2,500 words. Publish bar: the thesis fits in one
      sentence, one number backs it, and the best counterargument is answered in the
-     text. Name the essay's own limits. Confidentiality check before publishing. -->
+     text. Name the essay's own limits. Meta experience in general terms only:
+     no internal numbers, programme or tool names, incidents or people. -->
 
 TODO: open with the thesis in one sentence, then the situation that taught it to you.
 
 ## The evidence
 
-TODO: the Reliability Captain programme. 12 engineers trained, still running. Link the case study at /work/reliability-captain/.
+TODO: what you saw on a large mobile app, in general terms. Cite public sources (talks, papers, published postmortems) for any numbers.
 
 ## The strongest objection
 

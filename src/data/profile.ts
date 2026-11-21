@@ -1,5 +1,10 @@
 // Every time-sensitive fact on the site lives here. A job change edits this
-// file and nothing else. Values marked "TODO" are unconfirmed; the check
+// file and nothing else.
+//
+// Meta work is described at resume level only: role, scope and the kind of
+// work. No internal metrics, tool or programme names, incidents or people.
+// `npm run check` fails on a percentage, multiplier or "halved" next to
+// Meta, Instagram or Facebook unless the line links a public source. Values marked "TODO" are unconfirmed; the check
 // script lists them as warnings until they are replaced.
 
 export interface Role {
@@ -16,7 +21,11 @@ export interface Role {
 export interface ProofPoint {
   /** One word from the positioning table: Fast, Stable, Operable, Automated */
   claim: string;
-  /** The number, shown large. null until a publishable number is confirmed. */
+  /**
+   * The number, shown large, or null. Meta work stays at resume level: no
+   * internal metrics, programme names or headcounts. Use a number only if it
+   * is yours to publish or Meta has already published it.
+   */
   figure: string | null;
   /** One sentence of context */
   detail: string;
@@ -41,21 +50,18 @@ export const profile = {
   proofPoints: [
     {
       claim: 'Stable',
-      figure: '½',
-      detail:
-        'Led the Instagram-wide crash workstream that halved the crash rate; null-pointer exceptions fell about 3×.',
+      figure: null,
+      detail: 'Led crash and memory reliability work across the Instagram Android app.',
     },
     {
       claim: 'Operable',
-      figure: '12',
-      detail:
-        'Founded the Reliability Captain programme and trained 12 engineers to run incidents. It still runs.',
+      figure: null,
+      detail: 'Founded an incident-response programme and trained engineers across teams to lead incidents.',
     },
     {
       claim: 'Automated',
-      figure: null, // TODO: a publishable number for the agent work
-      detail:
-        'Built AI agents that investigate and resolve regressions at scale, cutting the supervision load on my team.',
+      figure: null,
+      detail: 'Built AI agents that investigate regressions and help engineers fix them.',
     },
   ] satisfies ProofPoint[],
 
@@ -67,10 +73,10 @@ export const profile = {
       end: '2026-11', // TODO: confirm end month, or null if current
       summary: 'Owned Instagram Android performance and reliability for seven years.',
       highlights: [
-        'Led the Instagram-wide crash workstream: crash rate halved, null-pointer exceptions down about 3×.',
-        'Founded the Reliability Captain programme; trained 12 engineers in incident response.',
+        'Led crash and memory reliability work across the Android app.',
+        'Founded an incident-response programme and trained engineers across teams to lead incidents.',
         'Built performance logging and fixed UI freezes and judder across the app.',
-        'Built AI agents that debug and resolve bugs at scale.',
+        'Built AI agents that investigate regressions and help engineers fix them.',
       ],
     },
   ] satisfies Role[],

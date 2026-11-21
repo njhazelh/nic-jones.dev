@@ -23,11 +23,15 @@ if (!hiddenBecause(entry) && !LAST.test(sections.at(-1)?.text.replace('’', "'"
 
 <Article entry={entry}>
   <Fragment slot="before">
-    <p class="figure-line">
-      <span class="figure">{entry.data.figure}</span>
-      <span class="label">{entry.data.figureLabel}</span>
-    </p>
-    <p class="credits"><strong>What others did:</strong> {entry.data.credits}</p>
+    {
+      entry.data.figure && (
+        <p class="figure-line">
+          <span class="figure">{entry.data.figure}</span>
+          <span class="label">{entry.data.figureLabel}</span>
+        </p>
+      )
+    }
+    {entry.data.credits && <p class="credits"><strong>What others did:</strong> {entry.data.credits}</p>}
   </Fragment>
 </Article>
 

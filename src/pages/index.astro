@@ -40,8 +40,8 @@ const person = {
   <ul class="proof" role="list">
     {
       profile.proofPoints.map((p) => (
-        <li>
-          <span class="figure" aria-hidden="true">{p.figure ?? ""}</span>
+        <li class={p.figure ? 'has-figure' : undefined}>
+          {p.figure && <span class="figure" aria-hidden="true">{p.figure}</span>}
           <span class="claim">{p.claim}</span>
           <span class="detail">{p.detail}</span>
         </li>
@@ -96,10 +96,12 @@ const person = {
   }
   .proof li {
     display: grid;
-    grid-template-columns: 4.5rem 1fr;
-    column-gap: 1rem;
     padding-top: calc(var(--unit) / 2);
     border-top: 1px solid var(--rule);
+  }
+  .proof li.has-figure {
+    grid-template-columns: 4.5rem 1fr;
+    column-gap: 1rem;
   }
   .figure {
     grid-row: span 2;
@@ -111,7 +113,7 @@ const person = {
   .claim {
     font-weight: 600;
   }
-  .detail {
+  .has-figure .detail {
     grid-column: 2;
   }
 </style>

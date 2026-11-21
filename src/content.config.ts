@@ -30,15 +30,15 @@ const work = defineCollection({
   schema: z.object({
     ...dated,
     /** The proof-point word this case study backs: Fast, Stable, Operable or Automated. */
-    claim: z.enum(['Fast', 'Stable', 'Operable', 'Automated']),
-    /** The one publishable number, e.g. "½" or "12". */
-    figure: z.string(),
-    /** What the number measures, e.g. "crash rate, halved". */
-    figureLabel: z.string(),
-    /** The "what others did" line: teammates credited by role. */
-    credits: z.string(),
+    claim: z.enum(['Fast', 'Stable', 'Operable', 'Automated']).optional(),
+    /** One number that is yours to publish, e.g. "40%", shown large. Never an internal employer metric. */
+    figure: z.string().optional(),
+    /** What the number measures, e.g. "less JavaScript shipped". Required with `figure`. */
+    figureLabel: z.string().optional(),
+    /** The "what others did" line: teammates credited by role. Leave out for solo work. */
+    credits: z.string().optional(),
     supersededBy: reference('work').optional(),
-  }),
+  }).refine((d) => !d.figure || d.figureLabel, { message: '`figure` needs a `figureLabel`', path: ['figureLabel'] }),
 });
 
 /** Essays, notes and links. */

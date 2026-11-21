@@ -23,7 +23,13 @@ Personal site. Static, built with [Astro](https://astro.build). DigitalOcean App
 4. Push to `master`. A post dated today or earlier goes live with that deploy.
 5. A post dated in the future goes live on its date: `.github/workflows/publish.yml` asks App Platform for a fresh build at 06:00 UTC on any day something is due. It needs a `DIGITALOCEAN_TOKEN` repository secret.
 
-Case studies work the same way in `src/content/work/`. They also need `claim`, `figure`, `figureLabel` and `credits`. The build fails if a published case study doesn't end with a `## What went wrong or I'd change` section.
+Case studies work the same way in `src/content/work/`. Optional extras: `claim`, `figure` with `figureLabel`, and `credits` (the "what others did" line). The build fails if a published case study doesn't end with a `## What went wrong or I'd change` section.
+
+## Confidentiality
+
+Meta work stays at resume level: role, scope and the kind of work. No internal metrics, tool or programme names, incidents or people. Case studies come from work you can publish in full. Essays can draw on experience in general terms ("on a large mobile app…"). Anything Meta has published itself, such as an engineering blog post or a talk, can be cited and linked.
+
+`npm run check` fails on a line that mentions Meta, Instagram, Facebook or WhatsApp next to a percentage, a multiplier or a word like "halved", unless the same line links a public source.
 
 Durations such as "nearly nine years" are computed from role dates at build time, so they never go stale.
 
