@@ -3,7 +3,8 @@
 //     fetches automatically must be relative. Plain <a> links may go anywhere.
 //   - No phone number in any built page.
 //   - Home page under the 100 KB transfer budget (gzip, page + subresources).
-import { readFile, readdir } from 'node:fs/promises';
+//   - Every page's link-preview card (og:image) was generated.
+import { readFile, readdir, stat } from 'node:fs/promises';
 import { join, relative } from 'node:path';
 
 const DIST = new URL('../dist/', import.meta.url).pathname;
@@ -34,6 +35,9 @@ for await (const file of walk(DIST)) {
       if (/^(?:https?:)?\/\//.test(m[1])) errors.push(`${rel}: third-party request to ${m[1]}`);
     }
   }
+  const og = text.match(/<meta property="og:image" content="https?:\/\/[^/]+(\/og\/[^"]+\.png)"/)?.[1];
+  if (file.endsWith('.html') && !og) errors.push(`${rel}: no og:image`);
+  if (og && !(await stat(join(DIST, og)).then(() => true, () => false))) errors.push(`${rel}: og:image ${og} was not generated`);
   const phone = text.replace(/<[^>]+>/g, ' ').match(PHONE);
   if (phone) errors.push(`${rel}: looks like a phone number "${phone[0]}"`);
 }

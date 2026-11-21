@@ -13,6 +13,7 @@ Personal site. Static, built with [Astro](https://astro.build). DigitalOcean App
 | Projects | `src/content/projects/*.md` |
 | Blog posts (essays, notes, links) | `src/content/writing/*.md` |
 | Fields each content type takes | `src/content.config.ts` |
+| Link-preview cards (Open Graph images) | `src/lib/og.ts`; a new kind of page needs an entry in `cards()` |
 
 ## Adding a project
 
