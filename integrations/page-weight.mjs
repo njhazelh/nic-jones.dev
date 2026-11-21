@@ -22,8 +22,21 @@ function subresources(html) {
     if (href?.startsWith('/')) urls.add(href);
   }
   for (const m of html.matchAll(/<(?:script|img)[^>]+src="(\/[^"]+)"/g)) urls.add(m[1]);
-  // Fonts referenced from CSS (inline or linked) are fetched once text renders.
-  for (const m of html.matchAll(/url\(['"]?(\/fonts\/[^'")]+)['"]?\)/g)) urls.add(m[1]);
+  // A declared @font-face is only fetched if the page renders text in it, so
+  // count a face only when the page uses its style and weight.
+  const body = html.replace(/@font-face\s*\{[^}]*\}/g, '');
+  const usesItalic = /<(?:em|i|cite|dfn|var)[\s>]|font-style:\s*italic/i.test(body);
+  const usesBold = /<(?:h[1-6]|strong|b|th|dt)[\s>]|font-weight:\s*(?:[6-9]00|bold)/i.test(body);
+  for (const m of html.matchAll(/@font-face\s*\{([^}]*)\}/g)) {
+    const face = m[1];
+    const url = face.match(/url\(['"]?(\/[^'")]+)['"]?\)/)?.[1];
+    if (!url) continue;
+    const italic = /font-style:\s*italic/.test(face);
+    const weight = Number(face.match(/font-weight:\s*(\d+)/)?.[1] ?? 400);
+    if (italic && !usesItalic) continue;
+    if (weight >= 600 && !usesBold) continue;
+    urls.add(url);
+  }
   return [...urls];
 }
 

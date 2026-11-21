@@ -27,7 +27,7 @@ export const profile = {
   /** Used for <title>, JSON-LD and the resume heading */
   fullName: 'Nicholas Jones', // TODO: confirm professional name (open question in spec)
   role: 'Staff Software Engineer',
-  site: 'https://nick-jones.me', // TODO: confirm domain
+  site: 'https://nick-jones.me',
 
   /**
    * The pitch. `{meta}` is replaced at build time with the computed length of
