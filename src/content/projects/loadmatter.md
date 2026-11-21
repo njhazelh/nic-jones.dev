@@ -3,7 +3,6 @@ title: LoadMatter
 description: An Android app that reads your Strava activities and suggests each day's training, with fitness trends and year-on-year progress.
 status: active
 started: 2026-10
-url: https://loadmatter.nick-jones.me # TODO: the page returns 404; fix it or remove this line
 stack: [Android, Kotlin, Strava API]
 pinned: true
 draft: true # TODO: check the write-up, then remove draft
