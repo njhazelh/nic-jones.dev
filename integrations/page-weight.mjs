@@ -21,7 +21,19 @@ function subresources(html) {
     const href = m[0].match(/href="([^"]+)"/)?.[1];
     if (href?.startsWith('/')) urls.add(href);
   }
-  for (const m of html.matchAll(/<(?:script|img)[^>]+src="(\/[^"]+)"/g)) urls.add(m[1]);
+  // <picture>: a browser fetches one candidate from the first <source> it
+  // supports (AVIF here). Count the largest, the worst case on a dense screen,
+  // and skip the fallback <img>.
+  for (const pic of html.matchAll(/<picture[\s\S]*?<\/picture>/g)) {
+    const srcset = pic[0].match(/<source[^>]+srcset="([^"]+)"/)?.[1];
+    const largest = srcset
+      ?.split(',')
+      .map((c) => c.trim().split(/\s+/))
+      .sort((a, b) => parseFloat(b[1] ?? '1') - parseFloat(a[1] ?? '1'))[0]?.[0];
+    if (largest?.startsWith('/')) urls.add(largest);
+  }
+  const outsidePictures = html.replace(/<picture[\s\S]*?<\/picture>/g, '');
+  for (const m of outsidePictures.matchAll(/<(?:script|img)[^>]+src="(\/[^"]+)"/g)) urls.add(m[1]);
   // A declared @font-face is only fetched if the page renders text in it, so
   // count a face only when the page uses its style and weight.
   const body = html.replace(/@font-face\s*\{[^}]*\}/g, '');
