@@ -1,0 +1,61 @@
+---
+import Base from '../layouts/Base.astro';
+import { profile } from '../data/profile';
+import { monthLabel } from '../lib/time';
+
+// The PDF needs a browser to print it, which the DigitalOcean build doesn't have.
+// The link only appears when RESUME_PDF=1 and dist/resume.pdf is produced
+// (scripts/browser-checks.mjs --pdf). Off for now.
+const hasPdf = process.env.RESUME_PDF === '1';
+const { email, github, linkedin } = profile.links;
+---
+
+<Base title="Resume" description={`Resume of ${profile.fullName}, ${profile.role}.`}>
+  <header class="resume-head">
+    <h1>{profile.fullName}</h1>
+    <p class="muted">
+      {profile.role}
+      {email && <> · <a href={`mailto:${email}`}>{email}</a></>}
+      {github && <> · <a href={github}>{github.replace('https://', '')}</a></>}
+      {linkedin && <> · <a href={linkedin}>LinkedIn</a></>}
+    </p>
+    {hasPdf && <p class="no-print"><a href="/resume.pdf" download>Download PDF</a></p>}
+  </header>
+
+  <p class="lede">{profile.pitch}</p>
+
+  <h2>Experience</h2>
+  {
+    profile.roles.map((r) => (
+      <section class="role">
+        <h3>
+          {r.title} <span class="muted">· {r.org}</span>
+        </h3>
+        <p class="dates muted">
+          <time datetime={r.start}>{monthLabel(r.start)}</time> – {r.end ? <time datetime={r.end}>{monthLabel(r.end)}</time> : 'present'}
+        </p>
+        <p>{r.summary}</p>
+        <ul>
+          {r.highlights.map((h) => (
+            <li>{h}</li>
+          ))}
+        </ul>
+      </section>
+    ))
+  }
+</Base>
+
+<style>
+  .resume-head h1 {
+    margin-bottom: 0.25rem;
+  }
+  .role h3 {
+    margin-bottom: 0;
+  }
+  .dates {
+    margin-bottom: calc(var(--unit) / 2);
+  }
+  @media print {
+    h2 { margin-top: var(--unit); }
+  }
+</style>

@@ -1,0 +1,36 @@
+# DigitalOcean App Platform spec: a static site built from this repo through
+# the GitHub integration, the same way as the wordle app.
+#
+# Create the app once with either:
+#   - the control panel: Create App -> GitHub -> njhazelh/nick-jones.me, branch master,
+#     then match the settings below; or
+#   - doctl apps create --spec .do/app.yaml
+# After that, every push to master rebuilds and deploys.
+name: nick-jones-me
+static_sites:
+  - name: site
+    github:
+      repo: njhazelh/nick-jones.me
+      branch: master
+      deploy_on_push: true
+    environment_slug: node-js
+    source_dir: /
+    # The checks run inside the build, so a stale phrase, a third-party request
+    # or a blown page budget fails the deploy instead of shipping.
+    build_command: npm run build && npm run check
+    output_dir: dist
+    index_document: index.html
+    error_document: 404.html
+    envs:
+      - key: ASTRO_TELEMETRY_DISABLED
+        value: '1'
+        scope: BUILD_TIME
+# nick-jones.me's DNS is hosted at DigitalOcean (ns1-3.digitalocean.com), so
+# setting `zone` lets App Platform create the records and the certificate.
+domains:
+  - domain: nick-jones.me
+    type: PRIMARY
+    zone: nick-jones.me
+  - domain: www.nick-jones.me
+    type: ALIAS
+    zone: nick-jones.me

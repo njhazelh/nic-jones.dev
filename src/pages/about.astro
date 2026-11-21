@@ -1,0 +1,50 @@
+---
+import Base from '../layouts/Base.astro';
+import { profile } from '../data/profile';
+import { fillDurations } from '../lib/time';
+
+// DRAFT copy: every claim here comes from the spec. Cut any value sentence
+// that isn't true, per the spec's Values section.
+const meta = fillDurations('{meta}');
+---
+
+<Base title="About" description={`About ${profile.name}, ${profile.role}.`}>
+  <h1>About</h1>
+
+  <p class="lede">
+    I'm a {profile.role.toLowerCase()}. I spent {meta} at Meta, seven of them owning performance and reliability for
+    Instagram on Android.
+  </p>
+
+  <p>
+    The work I'm best at starts with a symptom nobody can explain: a crash rate that won't move, a screen that judders,
+    an incident that keeps coming back. I find the cause, fix it, and then build whatever stops it returning, whether
+    that's a lint rule, a dashboard, a training programme or an agent that does the first hour of debugging.
+  </p>
+
+  <h2>What I care about</h2>
+
+  <p>
+    <strong>Craft.</strong> I write down the options I rejected as well as the one I chose, and this site holds itself to
+    a published performance and accessibility budget.
+  </p>
+  <p>
+    <strong>Leverage through people.</strong> The Reliability Captain programme I founded trained 12 engineers to run
+    incidents, and it kept running after I moved on.
+  </p>
+  <p>
+    <strong>Open work.</strong> This site has no tracking scripts, and its source is public.
+  </p>
+  <p>
+    <strong>Safe, useful AI.</strong> I build agents that debug production systems, and I write about where they fail as
+    well as where they help.
+  </p>
+
+  <h2>What's next</h2>
+  <p>
+    I'm looking for work where a large system needs to get faster, steadier or easier to operate. That covers SRE,
+    performance, platform, Android and AI infrastructure.
+  </p>
+
+  <p><a href="/resume/">Read my resume</a> or <a href="/contact/">get in touch</a>.</p>
+</Base>
