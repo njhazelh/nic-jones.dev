@@ -1,0 +1,115 @@
+---
+// One layout for essays, notes and links. The page shows when it was written,
+// when it last changed in substance, the project it's about, and, if I've
+// since changed my mind, where the newer thinking is.
+import { getEntry, render } from 'astro:content';
+import Base from './Base.astro';
+import { profile } from '../data/profile';
+import { hrefFor, formatDate, isoDay, hiddenBecause, FORMAT_LABEL, SHOW_UNPUBLISHED, type Post } from '../lib/content';
+
+interface Props {
+  entry: Post;
+}
+const { entry } = Astro.props;
+const { data } = entry;
+const { Content } = await render(entry);
+// Point at the newer piece only once it is itself public, so the link always lands.
+const successor = data.supersededBy ? await getEntry(data.supersededBy) : undefined;
+const newer = successor && (SHOW_UNPUBLISHED || !hiddenBecause(successor)) ? successor : undefined;
+const projectEntry = data.project ? await getEntry(data.project) : undefined;
+const project = projectEntry && (SHOW_UNPUBLISHED || !hiddenBecause(projectEntry)) ? projectEntry : undefined;
+const canonical = new URL(hrefFor(entry), Astro.site).href;
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'BlogPosting',
+  headline: data.title,
+  description: data.description,
+  datePublished: isoDay(data.date),
+  ...(data.updated && { dateModified: isoDay(data.updated) }),
+  author: { '@type': 'Person', name: profile.fullName, url: profile.site },
+  mainEntityOfPage: canonical,
+  ...(data.tags.length && { keywords: data.tags.join(', ') }),
+};
+---
+
+<Base
+  title={data.title}
+  description={data.description}
+  jsonLd={jsonLd}
+  article={{ published: data.date, modified: data.updated }}
+  hiddenBecause={hiddenBecause(entry)}
+>
+  <article>
+    <header>
+      <p class="kicker muted">
+        {FORMAT_LABEL[data.format]}
+        {project && <> · <a href={hrefFor(project)}>{project.data.title}</a></>}
+      </p>
+      <h1>{data.title}</h1>
+      <p class="dates muted">
+        <time datetime={isoDay(data.date)}>{formatDate(data.date)}</time>
+        {data.updated && <>, updated <time datetime={isoDay(data.updated)}>{formatDate(data.updated)}</time></>}
+      </p>
+      {
+        newer && (
+          <p class="superseded" role="note">
+            I've changed my mind since writing this. The newer thinking is in{' '}
+            <a href={hrefFor(newer)}>{newer.data.title}</a>.
+          </p>
+        )
+      }
+      {
+        data.link && (
+          <p class="source">
+            Responding to <a href={data.link}>{new URL(data.link).hostname.replace(/^www\./, '')}</a>
+          </p>
+        )
+      }
+    </header>
+
+    <div class="prose">
+      <Content />
+    </div>
+
+    {
+      data.tags.length > 0 && (
+        <footer class="tags">
+          <p>
+            Filed under{' '}
+            {data.tags.map((t, i) => (
+              <>
+                {i > 0 && ', '}
+                <a href={`/tags/${t}/`}>{t.replaceAll('-', ' ')}</a>
+              </>
+            ))}
+            .
+          </p>
+        </footer>
+      )
+    }
+  </article>
+</Base>
+
+<style>
+  .kicker {
+    margin: 0;
+    font-size: var(--step--1);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .dates {
+    font-size: var(--step--1);
+  }
+  .superseded {
+    padding-left: 1rem;
+    border-left: 3px solid var(--accent);
+  }
+  .tags {
+    margin-top: calc(var(--unit) * 2);
+    padding-top: calc(var(--unit) / 2);
+    border-top: 1px solid var(--rule);
+    color: var(--fg-muted);
+    font-size: var(--step--1);
+  }
+</style>

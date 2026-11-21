@@ -1,0 +1,60 @@
+---
+// A plain list of posts: date, format, title, one sentence.
+import { hrefFor, formatDate, isoDay, hiddenBecause, FORMAT_LABEL, type Post } from '../lib/content';
+
+interface Props {
+  entries: Post[];
+  /** Hide the date, for hand-ordered lists such as the home page's pinned links */
+  undated?: boolean;
+}
+const { entries, undated = false } = Astro.props;
+---
+
+<ul class="entries" role="list">
+  {
+    entries.map((e) => {
+      const hidden = hiddenBecause(e);
+      return (
+        <li>
+          <p class="meta muted">
+            {!undated && <time datetime={isoDay(e.data.date)}>{formatDate(e.data.date)}</time>}
+            {!undated && ' · '}
+            {FORMAT_LABEL[e.data.format]}
+            {hidden && <span class="flag"> · {hidden}</span>}
+          </p>
+          <a class="title" href={hrefFor(e)}>{e.data.title}</a>
+          <p class="description">{e.data.description}</p>
+        </li>
+      );
+    })
+  }
+</ul>
+
+<style>
+  .entries {
+    padding: 0;
+    list-style: none;
+  }
+  .entries li {
+    padding-top: calc(var(--unit) / 2);
+    border-top: 1px solid var(--rule);
+  }
+  .meta {
+    margin: 0;
+    font-size: var(--step--1);
+  }
+  .title {
+    font-size: var(--step-1);
+    font-weight: 600;
+    text-decoration: none;
+  }
+  .title:hover {
+    text-decoration: underline;
+  }
+  .description {
+    margin-bottom: var(--unit);
+  }
+  .flag {
+    color: var(--accent);
+  }
+</style>

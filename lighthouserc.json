@@ -2,9 +2,9 @@
   "ci": {
     "collect": {
       "staticDistDir": "./dist",
-      "url": ["/", "/about/", "/resume/", "/contact/"],
+      "url": ["/", "/about/", "/resume/", "/contact/", "/colophon/"],
       "numberOfRuns": 3,
-      "settings": { "preset": "mobile" }
+      "settings": { "formFactor": "mobile" }
     },
     "assert": {
       "assertions": {

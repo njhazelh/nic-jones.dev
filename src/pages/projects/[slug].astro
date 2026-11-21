@@ -1,0 +1,109 @@
+---
+// A project: what it is, where to use it, the write-up, and every post about it.
+import { render } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import EntryList from '../../components/EntryList.astro';
+import { profile } from '../../data/profile';
+import { projects, posts, hiddenBecause, hrefFor, STATUS_LABEL, formatDate, isoDay } from '../../lib/content';
+import { monthLabel } from '../../lib/time';
+
+export async function getStaticPaths() {
+  return (await projects()).map((entry) => ({ params: { slug: entry.id }, props: { entry } }));
+}
+const { entry } = Astro.props;
+const { data } = entry;
+const { Content } = await render(entry);
+const hasWriteUp = Boolean(entry.body?.trim());
+const related = (await posts()).filter((p) => p.data.project?.id === entry.id);
+const host = (url: string) => new URL(url).host.replace(/^www\./, '');
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': data.url ? 'SoftwareApplication' : 'CreativeWork',
+  name: data.title,
+  description: data.description,
+  ...(data.url && { url: data.url }),
+  ...(data.repo && { codeRepository: data.repo }),
+  author: { '@type': 'Person', name: profile.fullName, url: profile.site },
+  mainEntityOfPage: new URL(hrefFor(entry), Astro.site).href,
+};
+---
+
+<Base title={data.title} description={data.description} jsonLd={jsonLd} hiddenBecause={hiddenBecause(entry)}>
+  <article>
+    <header>
+      <p class="kicker muted">Project</p>
+      <h1>{data.title}</h1>
+      <p class="lede">{data.description}</p>
+      <dl class="facts">
+        <dt>Status</dt>
+        <dd>{STATUS_LABEL[data.status]}, started {monthLabel(data.started)}</dd>
+        {data.stack.length > 0 && (
+          <>
+            <dt>Built with</dt>
+            <dd>{data.stack.join(', ')}</dd>
+          </>
+        )}
+        {data.url && (
+          <>
+            <dt>Use it</dt>
+            <dd><a href={data.url}>{host(data.url)}</a></dd>
+          </>
+        )}
+        {data.repo && (
+          <>
+            <dt>Source</dt>
+            <dd><a href={data.repo}>{host(data.repo)}{new URL(data.repo).pathname}</a></dd>
+          </>
+        )}
+        {data.updated && (
+          <>
+            <dt>Updated</dt>
+            <dd><time datetime={isoDay(data.updated)}>{formatDate(data.updated)}</time></dd>
+          </>
+        )}
+      </dl>
+    </header>
+
+    {
+      hasWriteUp && (
+        <div class="prose">
+          <Content />
+        </div>
+      )
+    }
+
+    {
+      related.length > 0 && (
+        <section aria-labelledby="writing">
+          <h2 id="writing">Writing about {data.title}</h2>
+          <EntryList entries={related} />
+        </section>
+      )
+    }
+  </article>
+</Base>
+
+<style>
+  .kicker {
+    margin: 0;
+    font-size: var(--step--1);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .facts {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 0.25rem 1.25rem;
+    padding-block: calc(var(--unit) / 2);
+    border-block: 1px solid var(--rule);
+    font-size: var(--step--1);
+  }
+  .facts dt {
+    color: var(--fg-muted);
+  }
+  .facts dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+  }
+</style>

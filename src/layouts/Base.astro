@@ -2,15 +2,22 @@
 import '../styles/global.css';
 import { profile } from '../data/profile';
 import { nav } from '../data/nav';
+import { liveSections, isoDay } from '../lib/content';
 
 interface Props {
   title?: string;
   description: string;
   /** Extra JSON-LD for this page */
   jsonLd?: Record<string, unknown>;
+  /** Set on blog posts */
+  article?: { published: Date; modified?: Date };
+  /** Shown only in `npm run dev`: why this page won't be in the production build */
+  hiddenBecause?: string | null;
 }
 
-const { title, description, jsonLd } = Astro.props;
+const { title, description, jsonLd, article, hiddenBecause } = Astro.props;
+const live: Record<string, boolean> = await liveSections();
+const items = nav.filter((item) => live[item.href] ?? true);
 const fullTitle = title ? `${title} · ${profile.name}` : `${profile.name}, ${profile.role}`;
 const canonical = new URL(Astro.url.pathname, Astro.site);
 const path = Astro.url.pathname;
@@ -28,9 +35,12 @@ const isCurrent = (href: string) => path === href || path.startsWith(href);
     <link rel="preload" href="/fonts/source-serif-4-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="sitemap" href="/sitemap-index.xml" />
+    {live['/writing/'] && <link rel="alternate" type="application/rss+xml" title={`${profile.name}: writing`} href="/rss.xml" />}
     <meta name="theme-color" content="#f4efe6" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#1d2427" media="(prefers-color-scheme: dark)" />
-    <meta property="og:type" content="website" />
+    <meta property="og:type" content={article ? 'article' : 'website'} />
+    {article && <meta property="article:published_time" content={isoDay(article.published)} />}
+    {article?.modified && <meta property="article:modified_time" content={isoDay(article.modified)} />}
     <meta property="og:title" content={fullTitle} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
@@ -43,9 +53,7 @@ const isCurrent = (href: string) => path === href || path.startsWith(href);
       <nav aria-label="Main">
         <ul>
           {
-            nav
-              .filter((item) => item.live)
-              .map((item) => (
+            items.map((item) => (
                 <li>
                   <a href={item.href} aria-current={isCurrent(item.href) ? 'page' : undefined}>
                     {item.label}
@@ -57,6 +65,8 @@ const isCurrent = (href: string) => path === href || path.startsWith(href);
       </nav>
     </header>
 
+    {hiddenBecause && <p class="unpublished page" role="note">{hiddenBecause}: not in the production build.</p>}
+
     <main id="main" class="page">
       <slot />
     </main>
@@ -64,6 +74,7 @@ const isCurrent = (href: string) => path === href || path.startsWith(href);
     <footer class="site-footer page">
       <p>
         <!--page-weight-->
+        {' '}<a href="/colophon/">How this site is built</a>.
       </p>
     </footer>
   </body>
@@ -106,5 +117,12 @@ const isCurrent = (href: string) => path === href || path.startsWith(href);
   }
   .site-footer p {
     margin: 0;
+  }
+  .unpublished {
+    margin-bottom: var(--unit);
+    padding-block: 0.25rem;
+    border-block: 1px dashed var(--accent);
+    color: var(--accent);
+    font-size: var(--step--1);
   }
 </style>

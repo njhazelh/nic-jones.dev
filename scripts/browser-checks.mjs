@@ -1,4 +1,4 @@
-// Browser checks against a running preview server (CI only; see ci.yml).
+// Browser checks against a running preview server (CI only; see .github/workflows/checks.yml).
 //   1. axe-core WCAG 2.1 AA scan of every page, light and dark. Fails on any violation.
 //   2. With --pdf, prints /resume/ to dist/resume.pdf.
 // Needs `playwright` and `axe-core`, installed in CI with --no-save so they
@@ -8,7 +8,9 @@ import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 
 const BASE = process.env.BASE_URL ?? 'http://localhost:4321';
-const PAGES = ['/', '/about/', '/resume/', '/contact/', '/404.html'];
+// Every page in the sitemap, so new posts and case studies are checked too.
+const sitemap = await readFile('dist/sitemap-0.xml', 'utf8');
+const PAGES = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => new URL(m[1]).pathname).concat('/404.html');
 const require = createRequire(import.meta.url);
 const axeSource = await readFile(require.resolve('axe-core/axe.min.js'), 'utf8');
 

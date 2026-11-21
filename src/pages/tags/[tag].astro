@@ -1,0 +1,20 @@
+---
+// One page per topic, listing every post filed under it.
+import Base from '../../layouts/Base.astro';
+import EntryList from '../../components/EntryList.astro';
+import { tagged } from '../../lib/content';
+
+export async function getStaticPaths() {
+  return [...(await tagged())].map(([tag, entries]) => ({ params: { tag }, props: { entries } }));
+}
+const { tag } = Astro.params;
+const { entries } = Astro.props;
+const name = tag.replaceAll('-', ' ');
+const title = name[0].toUpperCase() + name.slice(1);
+---
+
+<Base title={title} description={`Writing on ${name}.`}>
+  <h1>{title}</h1>
+  <p class="lede">Everything I've written on {name}. <a href="/writing/">All writing</a>.</p>
+  <EntryList entries={entries} />
+</Base>
