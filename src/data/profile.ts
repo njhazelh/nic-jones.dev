@@ -69,8 +69,8 @@ export const profile = {
     {
       org: 'Meta',
       title: 'Staff Software Engineer, Instagram',
-      start: '2018-01', // TODO: confirm start month
-      end: '2026-11', // TODO: confirm end month, or null if current
+      start: '2017-08',
+      end: '2026-07',
       summary: 'Owned Instagram Android performance and reliability for seven years.',
       highlights: [
         'Led crash and memory reliability work across the Android app.',
