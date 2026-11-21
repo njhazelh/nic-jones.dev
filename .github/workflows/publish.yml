@@ -3,7 +3,8 @@
 # rebuild on a timer, so this asks it to once a day when something is due.
 #
 # It rebuilds when:
-#   - a non-draft entry in src/content is dated today (UTC), or
+#   - a non-draft entry in src/content came due in the last 24 hours
+#     (scripts/due.mjs, which reads dates the same way the build does), or
 #   - it's the 1st of the month, so computed durations ("nearly nine years")
 #     and reviewBy warnings move on, or
 #   - someone runs it by hand (Actions -> publish -> Run workflow).
@@ -15,7 +16,8 @@ name: publish
 
 on:
   schedule:
-    # 06:00 UTC: a post dated 14 March appears around 06:00 UTC that day.
+    # 06:00 UTC: a post dated 14 March appears around 06:00 UTC that day. One
+    # with a time appears at the first run after that time.
     - cron: '0 6 * * *'
   workflow_dispatch:
 
@@ -31,19 +33,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Anything due today?
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '26'
+
+      - name: Anything due since the last run?
         id: due
         run: |
-          today=$(date -u +%F)
-          due=$(grep -rlE "^date: ${today}([[:space:]]|$)" src/content | xargs -r grep -L '^draft: true' || true)
+          due=$(node scripts/due.mjs --hours 24)
           if [ -n "$due" ]; then
-            echo "Due today:"; echo "$due"
+            echo "Due:"; echo "$due"
             echo "rebuild=true" >> "$GITHUB_OUTPUT"
           elif [ "$(date -u +%d)" = "01" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "Monthly or manual rebuild."
             echo "rebuild=true" >> "$GITHUB_OUTPUT"
           else
-            echo "Nothing due on ${today}."
+            echo "Nothing came due in the last 24 hours."
           fi
 
       - name: Ask App Platform for a fresh build
