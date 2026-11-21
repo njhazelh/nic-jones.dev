@@ -3,8 +3,9 @@ import Base from '../layouts/Base.astro';
 import { profile } from '../data/profile';
 import { monthLabel } from '../lib/time';
 
-// CI prints this page to /resume.pdf after the build (scripts/browser-checks.mjs)
-// and sets RESUME_PDF=1, so the download link only appears where the file will exist.
+// The PDF needs a browser to print it, which the DigitalOcean build doesn't have.
+// The link only appears when RESUME_PDF=1 and dist/resume.pdf is produced
+// (scripts/browser-checks.mjs --pdf). Off for now.
 const hasPdf = process.env.RESUME_PDF === '1';
 const { email, github, linkedin } = profile.links;
 ---

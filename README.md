@@ -1,6 +1,6 @@
 # nick-jones.me
 
-Personal site. Static, built with [Astro](https://astro.build), deployed to GitHub Pages by `.github/workflows/site.yml`.
+Personal site. Static, built with [Astro](https://astro.build). DigitalOcean App Platform builds and deploys `master` through its GitHub integration; the spec is in `.do/app.yaml`.
 
 ## Where things live
 
@@ -22,7 +22,7 @@ npm run build      # static output in dist/
 npm run check      # stale-copy lint, third-party request scan, 100 KB home-page budget
 ```
 
-CI also runs axe (WCAG 2.1 AA, light and dark), Lighthouse (fails under 95 in any category) and prints the resume to `/resume.pdf`. Those need a browser, so they run only in CI.
+The DigitalOcean build runs `npm run build && npm run check`, so a failing check blocks the deploy. GitHub Actions (`.github/workflows/checks.yml`) also runs axe (WCAG 2.1 AA, light and dark) and Lighthouse (fails under 95 in any category) on every PR. Those need a browser, so they run only there.
 
 ## Rules the checks enforce
 
