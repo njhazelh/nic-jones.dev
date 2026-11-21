@@ -2,19 +2,19 @@
 import Base from '../layouts/Base.astro';
 import { profile } from '../data/profile';
 import EntryList from '../components/EntryList.astro';
+import ProjectList from '../components/ProjectList.astro';
 import { fillDurations } from '../lib/time';
-import { caseStudies, posts, liveSections } from '../lib/content';
+import { projects, posts, liveSections } from '../lib/content';
 
 const detail = fillDurations(profile.pitchDetail);
 
 // Chosen by hand, not by date: the home page never shows how long it has been
 // since the last post.
-const pinnedWork = (await caseStudies()).filter((e) => e.data.pinned).slice(0, 2);
+const pinnedProjects = (await projects()).filter((e) => e.data.pinned).slice(0, 3);
 const pinnedPosts = (await posts()).filter((e) => e.data.pinned).slice(0, 2);
 const live = await liveSections();
 const next = [
-  live['/positions/'] && { href: '/positions/', label: 'Positions' },
-  live['/work/'] && { href: '/work/', label: 'Work' },
+  live['/projects/'] && { href: '/projects/', label: 'Projects' },
   live['/writing/'] && { href: '/writing/', label: 'Writing' },
   { href: '/resume/', label: 'Resume' },
   { href: '/about/', label: 'About' },
@@ -50,17 +50,17 @@ const person = {
   </ul>
 
   {
-    pinnedWork.length > 0 && (
-      <section aria-labelledby="pinned-work">
-        <h2 id="pinned-work">Case studies</h2>
-        <EntryList entries={pinnedWork} undated />
+    pinnedProjects.length > 0 && (
+      <section aria-labelledby="pinned-projects">
+        <h2 id="pinned-projects">What I'm building</h2>
+        <ProjectList entries={pinnedProjects} />
       </section>
     )
   }
   {
     pinnedPosts.length > 0 && (
       <section aria-labelledby="pinned-writing">
-        <h2 id="pinned-writing">Essays</h2>
+        <h2 id="pinned-writing">Writing</h2>
         <EntryList entries={pinnedPosts} undated />
       </section>
     )

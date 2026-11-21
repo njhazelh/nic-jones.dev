@@ -1,0 +1,18 @@
+---
+// Built only when there is at least one project, so /projects/ never shows empty.
+import Base from '../../layouts/Base.astro';
+import ProjectList from '../../components/ProjectList.astro';
+import { projects } from '../../lib/content';
+
+export async function getStaticPaths() {
+  const entries = await projects();
+  return entries.length ? [{ params: { index: undefined }, props: { entries } }] : [];
+}
+const { entries } = Astro.props;
+---
+
+<Base title="Projects" description="Apps and projects I'm building, with what I've learned from each.">
+  <h1>Projects</h1>
+  <p class="lede">Apps and tools I'm building in my own time, and what I've learned from them.</p>
+  <ProjectList entries={entries} />
+</Base>

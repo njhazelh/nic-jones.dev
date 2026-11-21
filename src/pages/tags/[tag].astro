@@ -1,34 +1,20 @@
 ---
-// Tags are evergreen topic pages. When a position owns the tag, the page leads
-// with the thesis, so it reads as that position's evidence file.
+// One page per topic, listing every post filed under it.
 import Base from '../../layouts/Base.astro';
 import EntryList from '../../components/EntryList.astro';
-import { tagged, positions } from '../../lib/content';
+import { tagged } from '../../lib/content';
 
 export async function getStaticPaths() {
-  const map = await tagged();
-  const owners = await positions();
-  return [...map].map(([tag, entries]) => ({
-    params: { tag },
-    props: { entries, position: owners.find((p) => p.data.tag === tag) },
-  }));
+  return [...(await tagged())].map(([tag, entries]) => ({ params: { tag }, props: { entries } }));
 }
 const { tag } = Astro.params;
-const { entries, position } = Astro.props;
+const { entries } = Astro.props;
 const name = tag.replaceAll('-', ' ');
 const title = name[0].toUpperCase() + name.slice(1);
 ---
 
-<Base title={title} description={position?.data.thesis ?? `Writing and case studies on ${name}.`}>
+<Base title={title} description={`Writing on ${name}.`}>
   <h1>{title}</h1>
-  {
-    position ? (
-      <p class="lede">
-        {position.data.thesis} <a href="/positions/">All positions</a>.
-      </p>
-    ) : (
-      <p class="lede">Everything filed under {name}.</p>
-    )
-  }
+  <p class="lede">Everything I've written on {name}. <a href="/writing/">All writing</a>.</p>
   <EntryList entries={entries} />
 </Base>

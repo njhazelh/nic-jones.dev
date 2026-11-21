@@ -1,10 +1,9 @@
 ---
-// A plain list of posts and case studies: date, format, title, one sentence.
-import type { CollectionEntry } from 'astro:content';
-import { hrefFor, formatDate, isoDay, hiddenBecause, FORMAT_LABEL, formatOf } from '../lib/content';
+// A plain list of posts: date, format, title, one sentence.
+import { hrefFor, formatDate, isoDay, hiddenBecause, FORMAT_LABEL, type Post } from '../lib/content';
 
 interface Props {
-  entries: (CollectionEntry<'work'> | CollectionEntry<'writing'>)[];
+  entries: Post[];
   /** Hide the date, for hand-ordered lists such as the home page's pinned links */
   undated?: boolean;
 }
@@ -20,7 +19,7 @@ const { entries, undated = false } = Astro.props;
           <p class="meta muted">
             {!undated && <time datetime={isoDay(e.data.date)}>{formatDate(e.data.date)}</time>}
             {!undated && ' · '}
-            {FORMAT_LABEL[formatOf(e)]}
+            {FORMAT_LABEL[e.data.format]}
             {hidden && <span class="flag"> · {hidden}</span>}
           </p>
           <a class="title" href={hrefFor(e)}>{e.data.title}</a>

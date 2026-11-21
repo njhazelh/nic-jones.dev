@@ -90,6 +90,35 @@ code, pre { font-family: var(--font-mono); font-size: 0.875em; }
   white-space: nowrap;
 }
 
+/* Rendered Markdown: posts and project write-ups */
+.prose blockquote {
+  margin-inline: 0;
+  padding-left: 1rem;
+  border-left: 3px solid var(--rule);
+  color: var(--fg-muted);
+}
+.prose pre {
+  overflow-x: auto;
+  padding: 0.75rem 1rem;
+  background: var(--bg-sunk);
+}
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+.prose th,
+.prose td {
+  padding: 0.25rem 0.75rem 0.25rem 0;
+  border-bottom: 1px solid var(--rule);
+  text-align: left;
+  vertical-align: top;
+}
+.prose img {
+  max-width: 100%;
+  height: auto;
+}
+
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }

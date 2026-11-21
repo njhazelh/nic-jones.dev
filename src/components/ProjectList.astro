@@ -1,0 +1,70 @@
+---
+// Projects as a list: name, status, one sentence, stack, links.
+import { hrefFor, hiddenBecause, STATUS_LABEL, type Project } from '../lib/content';
+
+interface Props {
+  entries: Project[];
+}
+const { entries } = Astro.props;
+const host = (url: string) => new URL(url).host.replace(/^www\./, '');
+---
+
+<ul class="projects" role="list">
+  {
+    entries.map((p) => (
+      <li>
+        <p class="meta muted">
+          <span class={`status ${p.data.status}`}>{STATUS_LABEL[p.data.status]}</span>
+          {p.data.stack.length > 0 && <> · {p.data.stack.join(', ')}</>}
+          {hiddenBecause(p) && <span class="flag"> · {hiddenBecause(p)}</span>}
+        </p>
+        <a class="title" href={hrefFor(p)}>{p.data.title}</a>
+        <p class="description">{p.data.description}</p>
+        {(p.data.url || p.data.repo) && (
+          <p class="links">
+            {p.data.url && <a href={p.data.url}>{host(p.data.url)}</a>}
+            {p.data.url && p.data.repo && ' · '}
+            {p.data.repo && <a href={p.data.repo}>Source</a>}
+          </p>
+        )}
+      </li>
+    ))
+  }
+</ul>
+
+<style>
+  .projects {
+    padding: 0;
+    list-style: none;
+  }
+  .projects li {
+    padding-top: calc(var(--unit) / 2);
+    padding-bottom: calc(var(--unit) / 2);
+    border-top: 1px solid var(--rule);
+  }
+  .meta {
+    margin: 0;
+    font-size: var(--step--1);
+  }
+  .status.active {
+    color: var(--accent);
+  }
+  .title {
+    font-size: var(--step-1);
+    font-weight: 600;
+    text-decoration: none;
+  }
+  .title:hover {
+    text-decoration: underline;
+  }
+  .description {
+    margin-bottom: 0.25rem;
+  }
+  .links {
+    margin: 0;
+    font-size: var(--step--1);
+  }
+  .flag {
+    color: var(--accent);
+  }
+</style>

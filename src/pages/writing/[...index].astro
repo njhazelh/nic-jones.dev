@@ -13,9 +13,9 @@ const { entries } = Astro.props;
 const tags = [...(await tagged()).keys()].sort();
 ---
 
-<Base title="Writing" description="Essays, notes and links on running large production systems.">
+<Base title="Writing" description="What I'm building, what I think about it, and what I'm reading.">
   <h1>Writing</h1>
-  <p class="lede">Essays argue a position. Notes extend one. Links point at something worth reading, with my take.</p>
+  <p class="lede">What I'm building, what I think about it, and things worth reading, with my take.</p>
   {
     tags.length > 0 && (
       <p class="muted">

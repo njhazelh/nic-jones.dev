@@ -7,27 +7,29 @@ Personal site. Static, built with [Astro](https://astro.build). DigitalOcean App
 | To change | Edit |
 | --- | --- |
 | Role, employer, dates, pitch, proof points, links | `src/data/profile.ts` (the only file a job change touches) |
-| Nav items | `src/data/nav.ts` (Work, Positions and Writing appear once they hold a published entry) |
+| Nav items | `src/data/nav.ts` (Projects and Writing appear once they hold a published entry) |
 | Type, colour, spacing | `src/styles/tokens.css` |
 | Page copy | `src/pages/*.astro` |
-| Case studies | `src/content/work/*.md` |
-| Essays, notes, links | `src/content/writing/*.md` |
-| Positions (theses) | `src/content/positions/*.md` |
+| Projects | `src/content/projects/*.md` |
+| Blog posts (essays, notes, links) | `src/content/writing/*.md` |
 | Fields each content type takes | `src/content.config.ts` |
+
+## Adding a project
+
+1. Add `src/content/projects/<url-slug>.md`. The file name is the URL (`/projects/<url-slug>/`), so don't rename it once it's live.
+2. Frontmatter: `title`, `description` (one sentence), `status` (`active`, `shipped`, `paused` or `retired`) and `started` (`YYYY-MM`). Optional: `url`, `repo` (public repositories only), `stack`, `pinned` (shown on the home page), `updated`, `draft`.
+3. The body is an optional write-up: what it is, why you built it, what you learned.
 
 ## Publishing a post
 
 1. Add `src/content/writing/<url-slug>.md`. The file name is the URL, so don't rename it once it's live.
-2. Frontmatter: `title`, `description` (one sentence), `date`, `format` (`essay`, `note` or `link`, plus `link:` for a link post) and `tags` (one per position). Optional: `pinned` (linked from the home page), `updated`, `supersededBy`, `draft`.
-3. `npm run dev` shows drafts and future-dated posts with a banner. The production build leaves both out.
-4. Push to `master`. A post dated today or earlier goes live with that deploy.
-5. A post dated in the future goes live on its date: `.github/workflows/publish.yml` asks App Platform for a fresh build at 06:00 UTC on any day something is due. It needs a `DIGITALOCEAN_TOKEN` repository secret.
-
-Case studies work the same way in `src/content/work/`. Optional extras: `claim`, `figure` with `figureLabel`, and `credits` (the "what others did" line). The build fails if a published case study doesn't end with a `## What went wrong or I'd change` section.
+2. Frontmatter: `title`, `description` (one sentence), `date`, `format` (`essay`, `note` or `link`, plus `link:` for a link post). Optional: `project` (a project's file name; its page lists the post), `tags`, `pinned`, `updated`, `supersededBy`, `draft`.
+3. `npm run dev` shows drafts with a banner. The production build leaves them out.
+4. Remove `draft: true` and push to `master`. App Platform deploys it.
 
 ## Confidentiality
 
-Meta work stays at resume level: role, scope and the kind of work. No internal metrics, tool or programme names, incidents or people. Case studies come from work you can publish in full. Essays can draw on experience in general terms ("on a large mobile app…"). Anything Meta has published itself, such as an engineering blog post or a talk, can be cited and linked.
+Meta work stays at resume level: role, scope and the kind of work. No internal metrics, tool or programme names, incidents or people. Projects are your own work, so they can be described in full. Posts can draw on experience in general terms ("on a large mobile app…"). Anything Meta has published itself, such as an engineering blog post or a talk, can be cited and linked.
 
 `npm run check` fails on a line that mentions Meta, Instagram, Facebook or WhatsApp next to a percentage, a multiplier or a word like "halved", unless the same line links a public source.
 

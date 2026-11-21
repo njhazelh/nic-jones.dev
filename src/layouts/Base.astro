@@ -9,7 +9,7 @@ interface Props {
   description: string;
   /** Extra JSON-LD for this page */
   jsonLd?: Record<string, unknown>;
-  /** Set on posts and case studies */
+  /** Set on blog posts */
   article?: { published: Date; modified?: Date };
   /** Shown only in `npm run dev`: why this page won't be in the production build */
   hiddenBecause?: string | null;
