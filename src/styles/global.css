@@ -51,6 +51,7 @@ body {
   .wide {
     margin-left: calc(-1 * (var(--rail) + var(--rail-gap)));
   }
+  .skip:focus { left: max(var(--gutter), calc((100% - (var(--rail) + var(--rail-gap) + var(--measure))) / 2)); }
   /* Hangs in the rail, level with whatever follows it */
   .rail-label {
     float: left;
@@ -153,7 +154,8 @@ code, pre { font-family: var(--font-mono); font-size: 0.85em; }
   left: -999px;
 }
 .skip:focus {
-  left: var(--gutter);
+  /* Inside the column, never out in the margins where the critters live */
+  left: max(var(--gutter), calc((100% - var(--measure)) / 2));
   top: 0.5rem;
   z-index: 1;
   background: var(--bg);
