@@ -33,7 +33,7 @@ const jsonLd = {
 <Base title={data.title} description={data.description} jsonLd={jsonLd} hiddenBecause={hiddenBecause(entry)}>
   <article>
     <header>
-      <p class="kicker muted">Project</p>
+      <p class="kicker label">Project</p>
       <h1>{data.title}</h1>
       <p class="lede">{data.description}</p>
       <dl class="facts">
@@ -102,21 +102,19 @@ const jsonLd = {
 </Base>
 
 <style>
-  .kicker {
-    margin: 0;
-    font-size: var(--step--1);
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-  }
   .facts {
     display: grid;
     grid-template-columns: max-content 1fr;
-    gap: 0.25rem 1.25rem;
-    padding-block: calc(var(--unit) / 2);
-    border-block: 1px solid var(--rule);
-    font-size: var(--step--1);
+    gap: 0.4rem 1.5rem;
+    padding-block: calc(var(--unit) * 0.75);
+    border-block: 1px solid var(--rule-strong);
   }
   .facts dt {
+    padding-top: 0.2em;
+    font-family: var(--font-mono);
+    font-size: var(--text-label);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
     color: var(--fg-muted);
   }
   .facts dd {
@@ -124,14 +122,15 @@ const jsonLd = {
     overflow-wrap: anywhere;
   }
   .shot {
-    margin-inline: 0;
+    margin: calc(var(--unit) * 1.5) 0;
   }
   .shot :global(img) {
     display: block;
     width: 280px;
     max-width: 100%;
     height: auto;
-    border: 1px solid var(--rule);
+    border: 1px solid var(--rule-strong);
     border-radius: 6px;
+    box-shadow: 0.6rem 0.6rem 0 var(--bg-sunk);
   }
 </style>

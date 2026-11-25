@@ -1,6 +1,7 @@
 // Replaces <!--page-weight--> in every built page with real measurements:
 // gzipped bytes of the page and everything it loads, the request count, and
-// the build time. The footer can't drift from the truth because it is the truth.
+// the build time, as the footer's readout. The footer can't drift from the
+// truth because it is the truth.
 import { readFile, writeFile, stat } from 'node:fs/promises';
 import { gzipSync } from 'node:zlib';
 import { join } from 'node:path';
@@ -81,8 +82,15 @@ export default function pageWeight() {
           for (const url of subs) bytes += await transferBytes(join(root, url));
           const kb = (bytes / 1024).toFixed(1);
           const requests = subs.length + 1;
-          const line = `This page: ${kb} KB over ${requests} request${requests === 1 ? '' : 's'}, no JavaScript, built in ${seconds} s.`;
-          await writeFile(file, html.replace(MARK, line));
+          const readout = [
+            ['This page', `${kb} KB`],
+            ['Requests', String(requests)],
+            ['JavaScript', 'None'],
+            ['Built in', `${seconds} s`],
+          ]
+            .map(([term, value]) => `<div><dt>${term}</dt><dd>${value}</dd></div>`)
+            .join('');
+          await writeFile(file, html.replace(MARK, `<dl class="readout" data-page-kb="${kb}">${readout}</dl>`));
           report.push(`/${pathname} ${kb} KB, ${requests} req`);
         }
         logger.info(report.join('\n'));

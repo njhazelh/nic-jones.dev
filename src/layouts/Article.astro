@@ -42,12 +42,12 @@ const jsonLd = {
 >
   <article>
     <header>
-      <p class="kicker muted">
+      <p class="kicker label">
         {FORMAT_LABEL[data.format]}
         {project && <> · <a href={hrefFor(project)}>{project.data.title}</a></>}
       </p>
       <h1>{data.title}</h1>
-      <p class="dates muted">
+      <p class="dates label muted">
         <time datetime={isoDay(data.date)}>{formatDate(data.date)}</time>
         {data.updated && <>, updated <time datetime={isoDay(data.updated)}>{formatDate(data.updated)}</time></>}
       </p>
@@ -74,7 +74,7 @@ const jsonLd = {
 
     {
       data.tags.length > 0 && (
-        <footer class="tags">
+        <footer class="tags label">
           <p>
             Filed under{' '}
             {data.tags.map((t, i) => (
@@ -92,24 +92,23 @@ const jsonLd = {
 </Base>
 
 <style>
-  .kicker {
-    margin: 0;
-    font-size: var(--step--1);
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-  }
   .dates {
-    font-size: var(--step--1);
+    margin-bottom: calc(var(--unit) * 1.5);
   }
   .superseded {
     padding-left: 1rem;
     border-left: 3px solid var(--accent);
   }
+  .source {
+    font-style: normal;
+  }
   .tags {
     margin-top: calc(var(--unit) * 2);
     padding-top: calc(var(--unit) / 2);
-    border-top: 1px solid var(--rule);
+    border-top: 1px solid var(--rule-strong);
     color: var(--fg-muted);
-    font-size: var(--step--1);
+  }
+  .tags p {
+    margin: 0;
   }
 </style>

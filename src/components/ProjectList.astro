@@ -1,5 +1,6 @@
 ---
-// Projects as a list: name, status, one sentence, stack, links.
+// Projects as a list: status in the rail, then name, one sentence, stack
+// and links.
 import { hrefFor, hiddenBecause, STATUS_LABEL, type Project } from '../lib/content';
 
 interface Props {
@@ -13,17 +14,16 @@ const host = (url: string) => new URL(url).host.replace(/^www\./, '');
   {
     entries.map((p) => (
       <li>
-        <p class="meta muted">
+        <p class="meta rail-label label">
           <span class={`status ${p.data.status}`}>{STATUS_LABEL[p.data.status]}</span>
-          {p.data.stack.length > 0 && <> · {p.data.stack.join(', ')}</>}
-          {hiddenBecause(p) && <span class="flag"> · {hiddenBecause(p)}</span>}
+          {hiddenBecause(p) && <span class="flag">{hiddenBecause(p)}</span>}
         </p>
         <a class="title" href={hrefFor(p)}>{p.data.title}</a>
         <p class="description">{p.data.description}</p>
-        {(p.data.url || p.data.repo) && (
-          <p class="links">
+        {(p.data.stack.length > 0 || p.data.url || p.data.repo) && (
+          <p class="links label">
+            {p.data.stack.length > 0 && <span class="stack">{p.data.stack.join(' · ')}</span>}
             {p.data.url && <a href={p.data.url}>{host(p.data.url)}</a>}
-            {p.data.url && p.data.repo && ' · '}
             {p.data.repo && <a href={p.data.repo}>Source</a>}
           </p>
         )}
@@ -38,33 +38,74 @@ const host = (url: string) => new URL(url).host.replace(/^www\./, '');
     list-style: none;
   }
   .projects li {
-    padding-top: calc(var(--unit) / 2);
-    padding-bottom: calc(var(--unit) / 2);
+    display: flow-root;
+    padding-block: calc(var(--unit) * 0.75);
     border-top: 1px solid var(--rule);
   }
   .meta {
-    margin: 0;
-    font-size: var(--step--1);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 0.9rem;
+    color: var(--fg-muted);
+  }
+  @media (min-width: 64em) {
+    .meta {
+      flex-direction: column;
+      margin-top: 0.7em;
+    }
+  }
+  .status {
+    color: var(--fg);
+  }
+  .status::before {
+    content: '';
+    display: inline-block;
+    width: 0.55em;
+    height: 0.55em;
+    margin-right: 0.5em;
+    border: 1px solid currentColor;
+    border-radius: 50%;
+    vertical-align: 0.05em;
   }
   .status.active {
+    color: var(--accent);
+  }
+  .status.active::before,
+  .status.shipped::before {
+    background: currentColor;
+  }
+  .status.active::before {
+    animation: pulse 2.4s ease-out infinite;
+  }
+  .flag {
     color: var(--accent);
   }
   .title {
     font-size: var(--step-1);
     font-weight: 600;
+    line-height: 1.25;
     text-decoration: none;
   }
   .title:hover {
     text-decoration: underline;
   }
   .description {
-    margin-bottom: 0.25rem;
+    margin: 0.2rem 0 0.4rem;
   }
   .links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 1.25rem;
     margin: 0;
-    font-size: var(--step--1);
+    color: var(--fg-muted);
   }
-  .flag {
-    color: var(--accent);
+  @keyframes pulse {
+    0% {
+      box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 55%, transparent);
+    }
+    70%,
+    100% {
+      box-shadow: 0 0 0 0.45em transparent;
+    }
   }
 </style>

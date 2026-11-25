@@ -13,7 +13,7 @@ const { email, github, linkedin } = profile.links;
 <Base title="Resume" description={`Resume of ${profile.fullName}, ${profile.role}.`}>
   <header class="resume-head">
     <h1>{profile.fullName}</h1>
-    <p class="muted">
+    <p class="contact label">
       {profile.role}
       {email && <> · <a href={`mailto:${email}`}>{email}</a></>}
       {github && <> · <a href={github}>{github.replace('https://', '')}</a></>}
@@ -28,12 +28,12 @@ const { email, github, linkedin } = profile.links;
   {
     profile.roles.map((r) => (
       <section class="role">
-        <h3>
-          {r.title} <span class="muted">· {r.org}</span>
-        </h3>
-        <p class="dates muted">
+        <p class="dates rail-label label">
           <time datetime={r.start}>{monthLabel(r.start)}</time> – {r.end ? <time datetime={r.end}>{monthLabel(r.end)}</time> : 'present'}
         </p>
+        <h3>
+          {r.title} <span class="org">· {r.org}</span>
+        </h3>
         <p>{r.summary}</p>
         <ul>
           {r.highlights.map((h) => (
@@ -47,15 +47,40 @@ const { email, github, linkedin } = profile.links;
 
 <style>
   .resume-head h1 {
-    margin-bottom: 0.25rem;
+    margin-bottom: 0.5rem;
+  }
+  .contact {
+    color: var(--fg-muted);
+  }
+  .role {
+    display: flow-root;
+    margin-top: var(--unit);
+    padding-top: calc(var(--unit) * 0.75);
+    border-top: 1px solid var(--rule);
   }
   .role h3 {
-    margin-bottom: 0;
+    margin: 0 0 calc(var(--unit) / 2);
+  }
+  .org {
+    color: var(--fg-muted);
+    font-weight: 400;
   }
   .dates {
-    margin-bottom: calc(var(--unit) / 2);
+    color: var(--accent);
+  }
+  @media (min-width: 64em) {
+    .dates {
+      margin-top: 0.75em;
+    }
+  }
+  .role ul {
+    padding-left: 1.1rem;
+  }
+  .role li::marker {
+    color: var(--accent);
   }
   @media print {
     h2 { margin-top: var(--unit); }
+    .role { border: 0; }
   }
 </style>

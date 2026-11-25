@@ -44,8 +44,8 @@ for await (const file of walk(DIST)) {
 
 // Home page budget, measured the same way as the footer line.
 const home = await readFile(join(DIST, 'index.html'), 'utf8');
-const kb = Number(home.match(/This page: ([\d.]+) KB/)?.[1]);
-if (!kb) errors.push('index.html: footer page-weight line missing');
+const kb = Number(home.match(/data-page-kb="([\d.]+)"/)?.[1]);
+if (!kb) errors.push('index.html: footer page-weight readout missing');
 else if (kb > BUDGET_KB) errors.push(`index.html: ${kb} KB is over the ${BUDGET_KB} KB budget`);
 
 for (const e of errors) console.error(`error ${e}`);

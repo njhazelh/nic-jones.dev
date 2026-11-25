@@ -11,6 +11,7 @@ import satori from 'satori';
 import sharp from 'sharp';
 import { profile } from '../data/profile';
 import { projects, posts, tagged, FORMAT_LABEL, STATUS_LABEL } from './content';
+import { frames, BUDGET, share } from './frames';
 
 export interface Card {
   /** Page path without slashes, e.g. "projects/loadmatter"; "index" for home. */
@@ -95,10 +96,27 @@ export async function renderCard(card: Card): Promise<Buffer> {
       ? el('div', { marginTop: 28, fontSize: 34, lineHeight: 1.35, color: SLATE_SOFT, lineClamp: 2 }, card.description)
       : el('div', {}, ''),
   ]);
+  // The home page's frame-time chart, small, between the name and the address
+  const CHART_H = 44;
+  const chart = el(
+    'div',
+    { display: 'flex', alignItems: 'flex-end', gap: 3, height: CHART_H },
+    frames.map((ms) =>
+      el('div', { width: 4, height: Math.max(2, Math.round(share(ms) * CHART_H)), background: ms > BUDGET ? BRICK : RULE }),
+    ),
+  );
   const footer = el(
     'div',
-    { display: 'flex', justifyContent: 'space-between', paddingTop: 24, borderTop: `2px solid ${RULE}`, fontSize: 28, color: SLATE_SOFT },
-    [el('div', { fontWeight: 600, color: SLATE }, profile.name), el('div', {}, new URL(profile.site).host)],
+    {
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'flex-end',
+      paddingTop: 24,
+      borderTop: `2px solid ${RULE}`,
+      fontSize: 28,
+      color: SLATE_SOFT,
+    },
+    [el('div', { fontWeight: 600, color: SLATE }, profile.name), chart, el('div', {}, new URL(profile.site).host)],
   );
   // Padding goes on an inner box: on the fixed-size root, satori adds it to
   // the height and pushes the footer off the card.
