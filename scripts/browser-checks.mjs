@@ -52,7 +52,13 @@ for (const colorScheme of ['light', 'dark']) {
 // Text-node rects that overlap any critter canvas (there should be none)
 const textUnderCritters = (page) =>
   page.evaluate(() => {
-    const canvases = [...document.querySelectorAll('canvas.critters')].map((c) => c.getBoundingClientRect());
+    // Margin canvases are fixed and cover every scroll position, so only their
+    // horizontal extent matters; the ledge canvas scrolls with the page.
+    const canvases = [...document.querySelectorAll('canvas.critters')].map((c) => {
+      const r = c.getBoundingClientRect();
+      const fixed = !c.classList.contains('critters-ledge');
+      return { left: r.left, right: r.right, top: fixed ? -Infinity : r.top, bottom: fixed ? Infinity : r.bottom };
+    });
     const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
     const hits = [];
     for (let n; (n = walker.nextNode()); ) {
@@ -66,7 +72,7 @@ const textUnderCritters = (page) =>
     return hits;
   });
 
-for (const path of ['/', '/colophon/']) {
+for (const path of PAGES) {
   // JavaScript off: no trace of the critters, and the same words on the page
   const off = await browser.newPage({ javaScriptEnabled: false });
   await off.goto(BASE + path, { waitUntil: 'networkidle' });

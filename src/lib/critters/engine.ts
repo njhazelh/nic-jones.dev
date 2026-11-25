@@ -148,6 +148,7 @@ let down: { c: Critter | null; x: number; y: number; t: number; type: string; dx
 let followEl: Element | null = null;
 let pending = false;
 let session: {
+  v: number; // record version; any other is ignored
   sideA: number;
   rare: boolean[]; // tiger, jellyfish A, jellyfish B
   bugs: number;
@@ -161,21 +162,36 @@ const ptr = { x: -1e4, y: -1e4, on: false, vx: 0, vy: 0, t: 0, ax: -1e4, ay: -1e
 export function boot() {
   // `npm run dev` only: inspect the world from the console as `critters`
   if (import.meta.env.DEV) Object.assign(window, { critters: { get cast() { return cast; }, get mode() { return mode; }, get T() { return T; } } });
+  if (!document.createElement('canvas').getContext('2d')) return;
   const toggle = document.querySelector<HTMLButtonElement>('.critters-toggle');
-  if (media('(forced-colors: active)').matches || !document.createElement('canvas').getContext('2d')) return;
-  on = read(() => localStorage, 'critters') !== 'off';
-  if (toggle) {
-    toggle.hidden = false;
+  // Forced colours (a contrast theme) replaces the site's colours, and the
+  // critters step aside with them, switch included
+  const forced = media('(forced-colors: active)');
+  const show = () => {
+    if (!toggle) return;
+    toggle.hidden = forced.matches;
     toggle.setAttribute('aria-pressed', String(on));
-    toggle.addEventListener('click', () => {
-      on = !on;
-      toggle.setAttribute('aria-pressed', String(on));
-      write(() => localStorage, 'critters', on ? 'on' : 'off');
-      if (on) start(true);
-      else stop();
-    });
-  }
-  if (!on) {
+  };
+  // Bring the critters in line with the stored choice and the colour mode
+  const sync = () => {
+    show();
+    if (on && !forced.matches) start(true);
+    else stop(), (root.dataset.critters = 'off');
+  };
+  on = read(() => localStorage, 'critters') !== 'off';
+  show();
+  toggle?.addEventListener('click', () => {
+    on = !on;
+    write(() => localStorage, 'critters', on ? 'on' : 'off');
+    sync();
+  });
+  forced.addEventListener('change', sync);
+  // A page restored by Back may predate a choice made on a later page
+  addEventListener('pageshow', (e) => {
+    const want = read(() => localStorage, 'critters') !== 'off';
+    if (e.persisted && want !== on) (on = want), sync();
+  });
+  if (!on || forced.matches) {
     root.dataset.critters = 'off';
     return;
   }
@@ -186,7 +202,7 @@ export function boot() {
 }
 
 function start(fresh = false) {
-  if (!on || live) return;
+  if (!on || live || media('(forced-colors: active)').matches) return;
   live = true;
   ac = new AbortController();
   const passive = { passive: true, signal: ac.signal };
@@ -208,6 +224,7 @@ function start(fresh = false) {
   doc('pointercancel', onUp);
   doc('focusin', onFocus);
   doc('focusout', () => (followEl = null));
+  doc('keydown', (e: KeyboardEvent) => e.key === 'Escape' && ((tagHold = 0), showTag(null)));
   doc('visibilitychange', () => (document.hidden ? halt() : wake()));
   root.addEventListener('pointerleave', () => ((ptr.on = false), hover(null)), passive);
   win('resize', later);
@@ -221,7 +238,6 @@ function start(fresh = false) {
     if (reduced) still();
     wake();
   });
-  watch('(forced-colors: active)', stop);
   const dprWatch = () =>
     media(`(resolution: ${devicePixelRatio}dppx)`).addEventListener('change', () => (later(), dprWatch()), { once: true, signal: ac?.signal });
   dprWatch();
@@ -257,19 +273,22 @@ function stop() {
   root.style.cursor = '';
   root.classList.remove('critters-grabbing');
   root.dataset.critters = 'off';
-  const toggle = document.querySelector<HTMLButtonElement>('.critters-toggle');
-  if (toggle && media('(forced-colors: active)').matches) toggle.hidden = true;
 }
 
-function load() {
-  let s: typeof session | null = null;
+function load(): typeof session {
+  let s = null;
   try {
     s = JSON.parse(read(() => sessionStorage, 'critters:world') || 'null');
   } catch {
     /* a bad record is no record */
   }
-  if (s && s.world && Date.now() - s.world.t > 30 * 60e3) delete s.world;
-  return s || { sideA: Math.random() < 0.5 ? 0 : 1, rare: [Math.random() < 1 / 40, Math.random() < 1 / 50, Math.random() < 1 / 50], bugs: 0 };
+  // A record from another version of this script, or a damaged one, is no record
+  const ok = s && s.v === 1 && (s.sideA === 0 || s.sideA === 1) && Array.isArray(s.rare) && s.rare.length === 3 && Number.isFinite(s.bugs);
+  if (!ok) return { v: 1, sideA: Math.random() < 0.5 ? 0 : 1, rare: [Math.random() < 1 / 40, Math.random() < 1 / 50, Math.random() < 1 / 50], bugs: 0 };
+  const w = s.world;
+  const entry = (e: unknown) => Array.isArray(e) && e.length === 5 && e.every(Number.isFinite) && (e[3] === 0 || e[3] === 1);
+  if (w && !(Date.now() - w.t < 30 * 60e3 && Array.isArray(w.list) && w.list.every(entry))) delete s.world;
+  return s;
 }
 
 // Written on pagehide (never unload, so the back/forward cache still works).
@@ -499,7 +518,13 @@ function spawn(world: typeof session.world | null, rest = false) {
   const [rt, rj1, rj2] = session.rare;
   cast = [];
   fx = [];
-  held = hoverC = tagFor = null;
+  down = held = hoverC = tagFor = null;
+  clearTimeout(tagTimer);
+  clearTimeout(foundTimer);
+  tagHold = 0;
+  if (tag) tag.hidden = true;
+  root.style.cursor = '';
+  root.classList.remove('critters-grabbing');
   if (mode === 'margins') {
     cast.push(make('jellyfish', session.sideA, rj1));
     if (Math.min(sides[0].b, vw - sides[1].a) + 16 >= 240) cast.push(make('jellyfish', B, rj2));
@@ -518,12 +543,17 @@ function spawn(world: typeof session.world | null, rest = false) {
       c.x = z.a + fx_ * (z.b - z.a);
       c.y = fy * (mode === 'margins' ? vh : ledge.h);
       c.dir = dir;
+      orient(c);
       fit(c);
       if (asleep) bed(c, true);
     } else if (!rest && !world) enter(c);
   });
   lastStim = T;
 }
+
+// Point the sprite the way the critter faces (the steps do this while it's awake)
+const orient = (c: Critter) =>
+  (c.tf = c.kind === 'ladybird' ? (mode === 'ledge' ? (c.dir > 0 ? 3 : 4) : c.dir > 0 ? 0 : 2) : c.kind === 'jellyfish' || c.dir > 0 ? 0 : 1);
 
 // Where each critter rests; also the still life under reduced motion
 function home(c: Critter) {
@@ -572,6 +602,7 @@ function home(c: Critter) {
       c.y = floorY - 140 - c.h;
     }
   }
+  orient(c);
 }
 
 function enter(c: Critter) {
@@ -823,13 +854,14 @@ const jellyfish: Step = (c, dt, night) => {
       if (T >= c.next && c.t < 0.6) pulse(c, 34, 0.2), (c.next = T + 0.25);
       if (c.t > 0.6) go(c, 'swim');
       break;
-    case 'bed':
+    case 'bed': { // drifts to a spot above the floor the tiger naps on
+      const spot = bottom - 72 - c.h;
       c.f = 'drift';
-      c.vx = 0;
-      c.vy = 40;
-      move(c, dt);
-      if (c.y >= bottom - 16 - c.h) (c.y = bottom - 16 - c.h), bed(c, true);
+      c.vx = c.vy = 0;
+      c.y += clamp(spot - c.y, -40 * dt, 40 * dt);
+      if (Math.abs(spot - c.y) < 1) bed(c, true);
       return;
+    }
     case 'hide':
       return;
     case 'rise': // ledge visitor: up from behind the footer rule
@@ -1195,6 +1227,7 @@ const ladybird: Step = (c, dt, night) => {
       }
       return;
     case 'follow': { // keeps level with keyboard focus, like a bookmark
+      if (night) return bed(c);
       if (!followEl || ledged) return go(c, 'crawl');
       const r = followEl.getBoundingClientRect();
       const ty = clamp(r.top + r.height / 2 - c.h / 2, lo, hi);
@@ -1207,6 +1240,7 @@ const ladybird: Step = (c, dt, night) => {
       return;
     }
     case 'freeze':
+      if (night) return bed(c);
       c.f = 'rest';
       if (near) c.t = 0;
       else if (c.t > 0.5) go(c, 'crawl');
@@ -1357,8 +1391,14 @@ function onMove(e: PointerEvent) {
       if (c.asleep && c.st !== 'hide') rouse(c);
     }
   }
-  if (mouse) hover(hit(x, y, false));
+  if (mouse) hover(hit(x, y, false) || (overTag(e.clientX, e.clientY) ? tagFor : null));
   wake();
+}
+
+function overTag(cx: number, cy: number) {
+  if (!tag || tag.hidden || tag.style.visibility === 'hidden') return false;
+  const r = tag.getBoundingClientRect();
+  return cx >= r.left && cx < r.right && cy >= r.top && cy < r.bottom;
 }
 
 // The pointer has kept within 20 px for 1.5 s
@@ -1603,7 +1643,8 @@ function draw() {
       if (dark) add(sprite(c, true), c.x, y, (T < c.glowTo ? 0.38 : c.kind === 'jellyfish' ? 0.16 : 0.12) * a);
       add(sprite(c), c.x, y, a);
       if (c.asleep && c.kind !== 'ladybird') {
-        add(glyph('z'), c.kind === 'tiger' ? c.x + (c.dir > 0 ? c.w - 5 * q : 0) : c.x + c.w - 2 * q, c.y - (c.kind === 'tiger' ? q : 6 * q), 1);
+        const zx = c.kind === 'tiger' ? c.x + (c.dir > 0 ? c.w - 5 * q : 0) : c.x + c.w - 2 * q;
+        add(glyph('z'), clamp(zx, q, (mode === 'ledge' ? ledge.w : vw) - 6 * q), c.y - (c.kind === 'tiger' ? q : 6 * q), 1);
       }
     }
     for (const f of fx) add(glyph(f.g), f.x, f.y, f.age < f.life / 2 ? 1 : 2 * (1 - f.age / f.life));
