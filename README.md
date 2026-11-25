@@ -14,6 +14,7 @@ Personal site. Static, built with [Astro](https://astro.build). DigitalOcean App
 | Blog posts (essays, notes, links) | `src/content/writing/*.md` |
 | Fields each content type takes | `src/content.config.ts` |
 | Link-preview cards (Open Graph images) | `src/lib/og.ts`; a new kind of page needs an entry in `cards()` |
+| The frame-time chart on the home page and the cards | `src/lib/frames.ts` (an illustration, not data) |
 
 ## Adding a project
 

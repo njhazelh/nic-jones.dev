@@ -1,5 +1,5 @@
 ---
-// A plain list of posts: date, format, title, one sentence.
+// A plain list of posts: date and format in the rail, then title and one sentence.
 import { hrefFor, formatDate, isoDay, hiddenBecause, FORMAT_LABEL, type Post } from '../lib/content';
 
 interface Props {
@@ -16,11 +16,10 @@ const { entries, undated = false } = Astro.props;
       const hidden = hiddenBecause(e);
       return (
         <li>
-          <p class="meta muted">
+          <p class="meta rail-label label">
             {!undated && <time datetime={isoDay(e.data.date)}>{formatDate(e.data.date)}</time>}
-            {!undated && ' · '}
-            {FORMAT_LABEL[e.data.format]}
-            {hidden && <span class="flag"> · {hidden}</span>}
+            <span class="format">{FORMAT_LABEL[e.data.format]}</span>
+            {hidden && <span class="flag">{hidden}</span>}
           </p>
           <a class="title" href={hrefFor(e)}>{e.data.title}</a>
           <p class="description">{e.data.description}</p>
@@ -36,25 +35,38 @@ const { entries, undated = false } = Astro.props;
     list-style: none;
   }
   .entries li {
-    padding-top: calc(var(--unit) / 2);
+    display: flow-root;
+    padding-block: calc(var(--unit) * 0.75);
     border-top: 1px solid var(--rule);
   }
   .meta {
-    margin: 0;
-    font-size: var(--step--1);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 0.9rem;
+    color: var(--fg-muted);
+  }
+  @media (min-width: 64em) {
+    .meta {
+      flex-direction: column;
+      margin-top: 0.7em;
+    }
+  }
+  time {
+    color: var(--fg);
+  }
+  .flag {
+    color: var(--accent);
   }
   .title {
     font-size: var(--step-1);
     font-weight: 600;
+    line-height: 1.25;
     text-decoration: none;
   }
   .title:hover {
     text-decoration: underline;
   }
   .description {
-    margin-bottom: var(--unit);
-  }
-  .flag {
-    color: var(--accent);
+    margin: 0.2rem 0 0;
   }
 </style>

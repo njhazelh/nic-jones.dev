@@ -22,9 +22,13 @@ const source = 'https://github.com/njhazelh/nick-jones.me';
   </p>
   <p>
     The type is Source Serif 4, served from this domain in three files: regular, italic and semibold. A page downloads
-    only the ones it uses. The colours are warm plaster, slate and one brick red. The dark theme uses the same materials
-    with the lights off. Every type, colour and spacing decision sits in one file, so a redesign touches that file and no
-    content.
+    only the ones it uses. Labels, dates and figures are set in your system's own monospace font, so they cost nothing to
+    download. The colours are warm plaster, slate and one brick red. The dark theme uses the same materials with the
+    lights off. Every type, colour and spacing decision sits in one file, so a redesign touches that file and no content.
+  </p>
+  <p>
+    The chart on the home page, repeated small on every preview card, is an illustration, not data: frame times that run
+    over a 60 Hz budget until a fix, then stay under it. It's an SVG drawn when the site is built, from a seeded generator, so every build draws the same one.
   </p>
   <p>
     When a page is shared, the preview card is an image drawn at build time from the page's own title, in the same type
@@ -50,8 +54,8 @@ const source = 'https://github.com/njhazelh/nick-jones.me';
     </tbody>
   </table>
   <p>
-    The line at the foot of each page reports that page's weight, request count and the build time. It is written after
-    the build from the files themselves, so it can't drift from the truth.
+    The readout at the foot of each page reports that page's weight, request count and the build time. It is written
+    after the build from the files themselves, so it can't drift from the truth.
   </p>
 
   <h2>Copy that doesn't go stale</h2>
@@ -127,15 +131,25 @@ const source = 'https://github.com/njhazelh/nick-jones.me';
 <style>
   table {
     font-size: var(--step--1);
+    font-variant-numeric: lining-nums;
   }
   th,
   td {
-    padding: 0.35rem 0.75rem 0.35rem 0;
+    padding: 0.45rem 0.75rem 0.45rem 0;
     border-bottom: 1px solid var(--rule);
     text-align: left;
     vertical-align: top;
   }
   th {
+    border-bottom-color: var(--rule-strong);
+  }
+  td:first-child {
     font-weight: 600;
+  }
+  ul {
+    padding-left: 1.1rem;
+  }
+  li::marker {
+    color: var(--accent);
   }
 </style>

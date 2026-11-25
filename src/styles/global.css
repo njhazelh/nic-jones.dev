@@ -23,10 +23,41 @@ body {
   text-rendering: optimizeLegibility;
 }
 
+::selection {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+/* The frame. Narrow screens get one column. Wide screens add a rail on the
+   left: main content keeps its measure, and labels, dates and section
+   numbers hang in the rail beside it. */
 .page {
   max-width: calc(var(--measure) + 2 * var(--gutter));
   margin-inline: auto;
   padding-inline: var(--gutter);
+}
+.rail-label {
+  display: block;
+  margin-bottom: calc(var(--unit) / 3);
+}
+@media (min-width: 64em) {
+  .page {
+    max-width: calc(var(--rail) + var(--rail-gap) + var(--measure) + 2 * var(--gutter));
+  }
+  main.page {
+    padding-left: calc(var(--gutter) + var(--rail) + var(--rail-gap));
+  }
+  /* Spans the rail and the measure */
+  .wide {
+    margin-left: calc(-1 * (var(--rail) + var(--rail-gap)));
+  }
+  /* Hangs in the rail, level with whatever follows it */
+  .rail-label {
+    float: left;
+    clear: left;
+    width: var(--rail);
+    margin: 0.35em 0 0 calc(-1 * (var(--rail) + var(--rail-gap)));
+  }
 }
 
 /* Rhythm: every block sits one unit below the last */
@@ -40,9 +71,36 @@ h1, h2, h3 {
   margin-block: calc(var(--unit) * 2) calc(var(--unit) / 2);
   text-wrap: balance;
 }
-h1 { font-size: var(--step-3); margin-top: 0; letter-spacing: -0.01em; }
-h2 { font-size: var(--step-2); }
+h1 { font-size: var(--step-3); margin-top: 0; letter-spacing: -0.015em; line-height: 1.1; }
+h2 { font-size: var(--step-2); letter-spacing: -0.01em; }
 h3 { font-size: var(--step-1); }
+
+/* Section numbers: every visible h2 in the main column is numbered, in the
+   rail on wide screens and above the heading otherwise. */
+main { counter-reset: section; }
+main h2:not(.visually-hidden) {
+  position: relative;
+  counter-increment: section;
+}
+main h2:not(.visually-hidden)::before {
+  content: counter(section, decimal-leading-zero);
+  display: block;
+  margin-bottom: 0.6rem;
+  font: 500 var(--text-label) / 1 var(--font-mono);
+  letter-spacing: 0.08em;
+  color: var(--accent);
+}
+@media (min-width: 64em) {
+  main h2:not(.visually-hidden)::before {
+    position: absolute;
+    top: 0.62em;
+    left: calc(-1 * (var(--rail) + var(--rail-gap)));
+    width: var(--rail);
+    margin: 0;
+    padding-top: 0.55rem;
+    border-top: 1px solid var(--accent);
+  }
+}
 
 p { text-wrap: pretty; hyphens: auto; }
 
@@ -51,8 +109,12 @@ a {
   text-decoration-color: var(--accent);
   text-decoration-thickness: 0.08em;
   text-underline-offset: 0.18em;
+  transition: color 120ms ease, text-decoration-thickness 120ms ease;
 }
-a:hover { color: var(--accent); }
+a:hover {
+  color: var(--accent);
+  text-decoration-thickness: 0.14em;
+}
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 3px;
@@ -62,13 +124,29 @@ a:hover { color: var(--accent); }
 small, .muted { color: var(--fg-muted); }
 .lede { font-size: var(--step-1); line-height: 1.4; }
 
+/* Labels: kickers, dates, status, stack. Set in monospace, small and spaced. */
+.label {
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  font-weight: 400;
+  line-height: 1.5;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+.label a { text-underline-offset: 0.3em; }
+.kicker {
+  margin: 0 0 calc(var(--unit) / 2);
+  color: var(--accent);
+}
+
 hr {
   border: 0;
   border-top: 1px solid var(--rule);
   margin-block: calc(var(--unit) * 2);
 }
 
-code, pre { font-family: var(--font-mono); font-size: 0.875em; }
+code, pre { font-family: var(--font-mono); font-size: 0.85em; }
 
 .skip {
   position: absolute;
@@ -77,6 +155,7 @@ code, pre { font-family: var(--font-mono); font-size: 0.875em; }
 .skip:focus {
   left: var(--gutter);
   top: 0.5rem;
+  z-index: 1;
   background: var(--bg);
   padding: 0.25rem 0.5rem;
 }
@@ -94,13 +173,19 @@ code, pre { font-family: var(--font-mono); font-size: 0.875em; }
 .prose blockquote {
   margin-inline: 0;
   padding-left: 1rem;
-  border-left: 3px solid var(--rule);
+  border-left: 3px solid var(--accent);
   color: var(--fg-muted);
 }
 .prose pre {
   overflow-x: auto;
   padding: 0.75rem 1rem;
   background: var(--bg-sunk);
+  border-left: 3px solid var(--rule-strong);
+}
+.prose :not(pre) > code {
+  padding: 0.05em 0.3em;
+  background: var(--bg-sunk);
+  border-radius: 3px;
 }
 .prose table {
   width: 100%;
@@ -119,6 +204,17 @@ code, pre { font-family: var(--font-mono); font-size: 0.875em; }
   height: auto;
 }
 
+/* Tables anywhere: monospace headings over a strong rule */
+th {
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fg-muted);
+}
+.prose th { border-bottom-color: var(--rule-strong); }
+
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
@@ -126,6 +222,11 @@ code, pre { font-family: var(--font-mono); font-size: 0.875em; }
 @media print {
   :root { --bg: #fff; --fg: #000; --fg-muted: #333; --accent: #000; }
   html { font-size: 11pt; }
+  body { background: none; }
   .site-header, .site-footer, .no-print { display: none !important; }
+  main.page { padding-left: var(--gutter); max-width: none; }
+  .wide { margin-left: 0; }
+  .rail-label { float: none; width: auto; margin: 0; }
+  main h2::before { display: none !important; }
   a { text-decoration: none; }
 }

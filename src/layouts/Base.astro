@@ -58,32 +58,49 @@ const isCurrent = (href: string) => path === href || path.startsWith(href);
   <body>
     <a class="skip" href="#main">Skip to content</a>
     <header class="site-header page">
-      <a class="site-name" href="/" aria-current={path === '/' ? 'page' : undefined}>{profile.name}</a>
-      <nav aria-label="Main">
+      <a class="site-name" href="/" aria-current={path === '/' ? 'page' : undefined}>
+        <span class="mark" aria-hidden="true">N</span>{profile.name}
+      </a>
+      <nav aria-label="Main" class="label">
         <ul>
           {
             items.map((item) => (
-                <li>
-                  <a href={item.href} aria-current={isCurrent(item.href) ? 'page' : undefined}>
-                    {item.label}
-                  </a>
-                </li>
-              ))
+              <li>
+                <a href={item.href} aria-current={isCurrent(item.href) ? 'page' : undefined}>
+                  {item.label}
+                </a>
+              </li>
+            ))
           }
         </ul>
       </nav>
     </header>
 
-    {hiddenBecause && <p class="unpublished page" role="note">{hiddenBecause}: not in the production build.</p>}
+    {hiddenBecause && <div class="page"><p class="unpublished label" role="note">{hiddenBecause}: not in the production build.</p></div>}
 
     <main id="main" class="page">
       <slot />
     </main>
 
     <footer class="site-footer page">
-      <p>
-        <!--page-weight-->
-        {' '}<a href="/colophon/">How this site is built</a>.
+      {
+        // The build writes the real numbers here. `npm run dev` has none to show.
+        import.meta.env.DEV ? (
+          <dl class="readout">
+            <div><dt>This page</dt><dd>— KB</dd></div>
+            <div><dt>Requests</dt><dd>—</dd></div>
+            <div><dt>JavaScript</dt><dd>None</dd></div>
+            <div><dt>Built in</dt><dd>— s</dd></div>
+          </dl>
+        ) : (
+          <Fragment set:html="<!--page-weight-->" />
+        )
+      }
+      <p class="footnote label">
+        <span>Measured from the built files</span>
+        <a href="/colophon/">How this site is built</a>
+        {profile.links.github && <a href={profile.links.github}>GitHub</a>}
+        {live['/writing/'] && <a href="/rss.xml">RSS</a>}
       </p>
     </footer>
   </body>
@@ -91,47 +108,112 @@ const isCurrent = (href: string) => path === href || path.startsWith(href);
 
 <style>
   .site-header {
+    position: relative;
     display: flex;
     flex-wrap: wrap;
-    align-items: baseline;
+    align-items: center;
     justify-content: space-between;
-    gap: 0.5rem 1.5rem;
-    padding-block: var(--unit) calc(var(--unit) * 2);
+    gap: 0.75rem 1.5rem;
+    padding-block: var(--unit);
+    margin-bottom: calc(var(--unit) * 2.5);
+  }
+  /* A ruler under the header: a hairline with a short tick every 0.75rem and
+     a long one every 4.5rem */
+  .site-header::after {
+    content: '';
+    position: absolute;
+    inset: auto var(--gutter) 0;
+    height: 0.6rem;
+    background:
+      linear-gradient(var(--rule-strong), var(--rule-strong)) left bottom / 100% 1px no-repeat,
+      linear-gradient(90deg, var(--rule-strong) 1px, transparent 1px) left bottom / 4.5rem 0.6rem repeat-x,
+      linear-gradient(90deg, var(--rule) 1px, transparent 1px) left bottom / 0.75rem 0.3rem repeat-x;
+    pointer-events: none;
   }
   .site-name {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
     font-weight: 600;
     text-decoration: none;
+  }
+  .mark {
+    display: inline-grid;
+    place-items: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 3px;
+    background: var(--accent);
+    color: var(--on-accent);
+    font-size: 1.05rem;
+    line-height: 1;
+    transition: transform 160ms ease;
+  }
+  .site-name:hover .mark {
+    transform: rotate(-6deg);
   }
   nav ul {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.25rem 1.25rem;
+    gap: 0.25rem clamp(0.9rem, 3vw, 1.5rem);
     margin: 0;
     padding: 0;
     list-style: none;
   }
   nav a {
+    display: inline-block;
+    padding-block: 0.35rem;
     text-decoration: none;
   }
   nav a[aria-current='page'] {
+    color: var(--accent);
     text-decoration: underline;
-    text-decoration-color: var(--accent);
+    text-decoration-thickness: 2px;
+    text-underline-offset: 0.55em;
   }
   .site-footer {
-    margin-top: calc(var(--unit) * 3);
-    padding-block: var(--unit) calc(var(--unit) * 2);
-    border-top: 1px solid var(--rule);
-    color: var(--fg-muted);
-    font-size: var(--step--1);
+    position: relative;
+    margin-top: calc(var(--unit) * 4);
+    padding-block: calc(var(--unit) * 1.25) calc(var(--unit) * 2);
   }
-  .site-footer p {
+  .site-footer::before {
+    content: '';
+    position: absolute;
+    inset: 0 var(--gutter) auto;
+    border-top: 1px solid var(--rule-strong);
+  }
+  /* The readout is written into the page after the build
+     (integrations/page-weight.mjs), so these styles reach it globally. */
+  .site-footer :global(.readout) {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr));
+    gap: calc(var(--unit) / 2) 1.5rem;
+    margin: 0 0 var(--unit);
+  }
+  .site-footer :global(.readout dt) {
+    font-family: var(--font-mono);
+    font-size: var(--text-label);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--fg-muted);
+  }
+  .site-footer :global(.readout dd) {
     margin: 0;
+    font-size: var(--step-1);
+    font-weight: 600;
+    font-variant-numeric: lining-nums tabular-nums;
+  }
+  .footnote {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 1.5rem;
+    margin: 0;
+    color: var(--fg-muted);
   }
   .unpublished {
     margin-bottom: var(--unit);
     padding-block: 0.25rem;
     border-block: 1px dashed var(--accent);
     color: var(--accent);
-    font-size: var(--step--1);
   }
 </style>

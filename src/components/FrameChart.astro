@@ -1,0 +1,99 @@
+---
+// The home page's one picture: frame times against a 60 Hz budget. The
+// values and the story they tell live in src/lib/frames.ts. The SVG is plain
+// markup: no script.
+import { frames, BUDGET, share } from '../lib/frames';
+
+interface Props {
+  class?: string;
+}
+const { class: className } = Astro.props;
+
+const W = 10; // viewBox units per bar slot
+const H = 100;
+const y = (ms: number) => H - share(ms) * H;
+const budgetY = y(BUDGET);
+---
+
+<div class:list={['trace', className]} aria-hidden="true">
+  <div class="plot">
+    <svg viewBox={`0 0 ${frames.length * W} ${H}`} preserveAspectRatio="none" focusable="false">
+      {
+        frames.map((ms, i) => (
+          <rect class={ms > BUDGET ? 'over' : undefined} x={i * W + 2} y={y(ms).toFixed(1)} width={W - 4} height={(H - y(ms)).toFixed(1)} />
+        ))
+      }
+      <line class="budget" x1="0" x2={frames.length * W} y1={budgetY.toFixed(1)} y2={budgetY.toFixed(1)} vector-effect="non-scaling-stroke" />
+    </svg>
+    <span class="budget-label label" style={`top: ${((budgetY / H) * 100).toFixed(1)}%`}>16.7 ms budget</span>
+  </div>
+  <p class="legend label">
+    <span>Frame time</span>
+    <span class="key-over">Over budget</span>
+  </p>
+</div>
+
+<style>
+  .trace {
+    margin-block: calc(var(--unit) * 1.5) calc(var(--unit) * 2);
+  }
+  .plot {
+    position: relative;
+    border-bottom: 1px solid var(--rule-strong);
+  }
+  svg {
+    display: block;
+    width: 100%;
+    height: clamp(4.5rem, 3rem + 6vw, 8rem);
+    overflow: visible;
+    animation: trace 1.6s cubic-bezier(0.2, 0.7, 0.2, 1) 0.15s both;
+  }
+  rect {
+    fill: color-mix(in srgb, var(--fg) 26%, transparent);
+    transition: fill 120ms ease;
+  }
+  rect:hover {
+    fill: var(--fg);
+  }
+  rect.over {
+    fill: var(--accent);
+  }
+  .budget {
+    stroke: var(--fg-muted);
+    stroke-width: 1;
+    stroke-dasharray: 4 4;
+  }
+  .budget-label {
+    position: absolute;
+    right: 0;
+    translate: 0 -135%;
+    padding-left: 0.4rem;
+    background: var(--bg);
+    color: var(--fg-muted);
+  }
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.25rem 1.5rem;
+    margin: 0.6rem 0 0;
+    color: var(--fg-muted);
+  }
+  .key-over::before {
+    content: '';
+    display: inline-block;
+    width: 0.9em;
+    height: 0.7em;
+    margin-right: 0.5em;
+    vertical-align: -0.05em;
+    background: var(--accent);
+  }
+  @keyframes trace {
+    from {
+      clip-path: inset(0 100% 0 0);
+    }
+    to {
+      clip-path: inset(0 0 0 0);
+    }
+  }
+</style>

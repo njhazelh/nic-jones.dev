@@ -36,12 +36,18 @@
   --fg: var(--slate);
   --fg-muted: var(--slate-soft);
   --accent: var(--brick);
+  --on-accent: var(--plaster);
   --rule: color-mix(in srgb, var(--fg) 22%, transparent);
+  --rule-strong: color-mix(in srgb, var(--fg) 55%, transparent);
+  --wash: color-mix(in srgb, var(--accent) 9%, transparent);
 
-  /* Type */
+  /* Type: a serif to read, the reader's own monospace to label and measure.
+     The monospace is whatever the system ships, so it costs no download. */
   --font-body: 'Source Serif 4', 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
-  --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --font-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', 'Segoe UI Mono', 'Roboto Mono', Menlo, Consolas, 'Liberation Mono', monospace;
   --text-base: clamp(1.0625rem, 0.95rem + 0.45vw, 1.25rem);
+  --text-label: 0.72rem;
+  --text-display: clamp(2.1rem, 1.1rem + 3.4vw, 3.6rem);
   --leading: 1.55;
   --ratio: 1.25;
   --step--1: calc(1em / var(--ratio));
@@ -49,10 +55,13 @@
   --step-2: calc(1em * var(--ratio) * var(--ratio));
   --step-3: calc(1em * var(--ratio) * var(--ratio) * var(--ratio));
 
-  /* Proportion: one unit of vertical rhythm, one measure */
+  /* Proportion: one unit of vertical rhythm, one measure, and on wide
+     screens a rail to the left of it for labels and section numbers */
   --unit: calc(var(--leading) * 1rem);
   --measure: 36rem;
   --gutter: clamp(1.25rem, 5vw, 3rem);
+  --rail: 8.5rem;
+  --rail-gap: 2.5rem;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -63,5 +72,6 @@
     --fg: #e9e2d6;
     --fg-muted: #a9b0b2;
     --accent: #e08b6f;
+    --on-accent: #1d2427;
   }
 }
