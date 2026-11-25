@@ -9,7 +9,7 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "check": "node scripts/check-prose.mjs && node scripts/check-dist.mjs",
+    "check": "node scripts/check-prose.mjs && node scripts/check-sprites.mjs && node scripts/check-dist.mjs",
     "check:browser": "node scripts/browser-checks.mjs"
   },
   "dependencies": {

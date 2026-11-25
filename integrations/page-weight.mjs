@@ -1,6 +1,6 @@
 // Replaces <!--page-weight--> in every built page with real measurements:
-// gzipped bytes of the page and everything it loads, the request count, and
-// the build time, as the footer's readout. The footer can't drift from the
+// gzipped bytes of the page and everything it loads, the request count, how
+// much of that is JavaScript, and the build time, as the footer's readout. The footer can't drift from the
 // truth because it is the truth.
 import { readFile, writeFile, stat } from 'node:fs/promises';
 import { gzipSync } from 'node:zlib';
@@ -53,6 +53,19 @@ function subresources(html) {
   return [...urls];
 }
 
+/** Gzipped bytes of every script the page runs: module files and inline code (JSON-LD is data, not code). */
+async function scriptBytes(html, root) {
+  let bytes = 0;
+  for (const m of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g)) {
+    const [, attrs, body] = m;
+    if (/type="application\/ld\+json"/.test(attrs)) continue;
+    const src = attrs.match(/src="(\/[^"]+)"/)?.[1];
+    if (src) bytes += await transferBytes(join(root, src));
+    else if (body.trim()) bytes += gzipSync(Buffer.from(body), { level: 9 }).length;
+  }
+  return bytes;
+}
+
 export default function pageWeight() {
   let started = 0;
   return {
@@ -82,16 +95,18 @@ export default function pageWeight() {
           for (const url of subs) bytes += await transferBytes(join(root, url));
           const kb = (bytes / 1024).toFixed(1);
           const requests = subs.length + 1;
+          const js = await scriptBytes(html, root);
+          const jsKb = (js / 1024).toFixed(1);
           const readout = [
             ['This page', `${kb} KB`],
             ['Requests', String(requests)],
-            ['JavaScript', 'None'],
+            ['JavaScript', js ? `${jsKb} KB` : 'None'],
             ['Built in', `${seconds} s`],
           ]
             .map(([term, value]) => `<div><dt>${term}</dt><dd>${value}</dd></div>`)
             .join('');
-          await writeFile(file, html.replace(MARK, `<dl class="readout" data-page-kb="${kb}">${readout}</dl>`));
-          report.push(`/${pathname} ${kb} KB, ${requests} req`);
+          await writeFile(file, html.replace(MARK, `<dl class="readout" data-page-kb="${kb}" data-page-js-kb="${jsKb}">${readout}</dl>`));
+          report.push(`/${pathname} ${kb} KB, ${requests} req, ${jsKb} KB JS`);
         }
         logger.info(report.join('\n'));
       },

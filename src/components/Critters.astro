@@ -1,0 +1,10 @@
+---
+// The critters in the margins (src/lib/critters). Nothing is rendered here:
+// the script draws them after the page has loaded, so with JavaScript off the
+// page is unchanged. The on/off switch lives in the footer (Base.astro).
+---
+
+<script>
+  import { boot } from '../lib/critters/engine';
+  boot();
+</script>

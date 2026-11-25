@@ -215,6 +215,34 @@ th {
 }
 .prose th { border-bottom-color: var(--rule-strong); }
 
+/* The critters (src/lib/critters), drawn by script into space that holds no
+   text: the margins, or the gap above the footer rule. z-index -1 paints them
+   over the page background (which body hands to the root) and under all
+   content, so html must keep no background and body no stacking context. */
+.critters {
+  position: fixed;
+  z-index: -1;
+  pointer-events: none;
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
+}
+.critters-ledge { position: absolute; }
+.critter-tag {
+  position: fixed;
+  z-index: 1;
+  padding: 0 0.3em;
+  pointer-events: none;
+  background: var(--bg);
+  color: var(--fg-muted);
+  white-space: pre;
+}
+.critter-tag.in-ledge { position: absolute; }
+html.critters-grabbing,
+html.critters-grabbing * { cursor: grabbing !important; user-select: none; }
+@media (forced-colors: active) {
+  .critters, .critter-tag { display: none !important; }
+}
+
 /* `*` alone misses pseudo-elements, such as the pulsing status dot */
 @media (prefers-reduced-motion: reduce) {
   *,
