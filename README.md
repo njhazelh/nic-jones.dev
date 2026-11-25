@@ -15,6 +15,8 @@ Personal site. Static, built with [Astro](https://astro.build). DigitalOcean App
 | Fields each content type takes | `src/content.config.ts` |
 | Link-preview cards (Open Graph images) | `src/lib/og.ts`; a new kind of page needs an entry in `cards()` |
 | The frame-time chart on the home page and the cards | `src/lib/frames.ts` (an illustration, not data) |
+| The critters' pixel art | `src/lib/critters/sprites.ts` (one character per pixel; `npm run check` validates it) |
+| How the critters move and react | `src/lib/critters/engine.ts` (in `npm run dev`, inspect them from the console as `critters`) |
 
 ## Adding a project
 
@@ -43,10 +45,10 @@ Durations such as "nearly nine years" are computed from role dates at build time
 npm ci
 npm run dev        # local server at http://localhost:4321
 npm run build      # static output in dist/
-npm run check      # stale-copy lint, third-party request scan, 100 KB home-page budget
+npm run check      # stale-copy lint, sprite check, third-party request scan, 100 KB home-page and 15 KB JavaScript budgets
 ```
 
-The DigitalOcean build runs `npm run build && npm run check`, so a failing check blocks the deploy. GitHub Actions (`.github/workflows/checks.yml`) also runs axe (WCAG 2.1 AA, every page in the sitemap, light and dark) and Lighthouse (fails under 95 in any category) on every PR. Those need a browser, so they don't run in the DigitalOcean build. To run them locally:
+The DigitalOcean build runs `npm run build && npm run check`, so a failing check blocks the deploy. GitHub Actions (`.github/workflows/checks.yml`) also runs axe (WCAG 2.1 AA, every page in the sitemap, light and dark), checks that the critters stay decoration (nothing changes with JavaScript off, no text under their canvases, still under reduced motion, nothing printed) and Lighthouse (fails under 95 in any category) on every PR. Those need a browser, so they don't run in the DigitalOcean build. To run them locally:
 
 ```sh
 npm install --no-save playwright@1.65 axe-core@4 && npx playwright install chromium
@@ -58,6 +60,7 @@ npm run check:browser
 
 - No "currently", "recently", "this year", "weekly" or "latest post" in copy. Facts that date go in the data file.
 - No request to any third-party host. Fonts are self-hosted (Source Serif 4, OFL, `public/fonts/`).
+- Under 15 KB of JavaScript on any page (gzip), in one module script, and every page reads the same with it turned off. The only script is the critters (`src/lib/critters/`).
 - No phone number anywhere in the build.
 - Values marked `TODO:` in the data file and in drafts are printed as warnings until confirmed.
 - A `TODO` in a content entry that isn't `draft: true` fails the check, so a half-written post can't ship.

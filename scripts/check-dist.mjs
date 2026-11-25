@@ -3,12 +3,16 @@
 //     fetches automatically must be relative. Plain <a> links may go anywhere.
 //   - No phone number in any built page.
 //   - Home page under the 100 KB transfer budget (gzip, page + subresources).
+//   - No page runs more than 15 KB of JavaScript (gzip), all of it in one
+//     module script with no modulepreload, so the footer readout counts it all.
+//   - Built JavaScript holds no absolute URL (a fetch to another host).
 //   - Every page's link-preview card (og:image) was generated.
 import { readFile, readdir, stat } from 'node:fs/promises';
 import { join, relative } from 'node:path';
 
 const DIST = new URL('../dist/', import.meta.url).pathname;
 const BUDGET_KB = 100;
+const JS_BUDGET_KB = 15;
 
 async function* walk(dir) {
   for (const e of await readdir(dir, { withFileTypes: true })) {
@@ -28,8 +32,19 @@ const PHONE = /(?:\+\d{1,3}[\s.-]?)?\(?\d{3}\)?[\s.-]\d{3}[\s.-]\d{4}\b/;
 
 for await (const file of walk(DIST)) {
   const rel = relative(DIST, file);
+  if (file.endsWith('.js')) {
+    const url = (await readFile(file, 'utf8')).match(/\bhttps?:\/\/[^\s'"`)]+/)?.[0];
+    if (url) errors.push(`${rel}: absolute URL ${url} in built JavaScript`);
+    continue;
+  }
   if (!/\.(html|css|xml|txt)$/.test(file)) continue;
   const text = await readFile(file, 'utf8');
+  if (file.endsWith('.html')) {
+    const js = Number(text.match(/data-page-js-kb="([\d.]+)"/)?.[1] ?? 0);
+    if (js > JS_BUDGET_KB) errors.push(`${rel}: ${js} KB of JavaScript is over the ${JS_BUDGET_KB} KB budget`);
+    if (/rel="modulepreload"/.test(text)) errors.push(`${rel}: modulepreload would load JavaScript the readout doesn't count`);
+    if ((text.match(/<script[^>]+type="module"/g) ?? []).length > 1) errors.push(`${rel}: more than one module script`);
+  }
   for (const re of FETCHED) {
     for (const m of text.matchAll(re)) {
       if (/^(?:https?:)?\/\//.test(m[1])) errors.push(`${rel}: third-party request to ${m[1]}`);

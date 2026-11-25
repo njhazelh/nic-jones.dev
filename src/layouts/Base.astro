@@ -4,6 +4,7 @@ import { profile } from '../data/profile';
 import { nav } from '../data/nav';
 import { liveSections, isoDay } from '../lib/content';
 import { cardPath } from '../lib/og';
+import Critters from '../components/Critters.astro';
 
 interface Props {
   title?: string;
@@ -89,7 +90,7 @@ const isCurrent = (href: string) => path === href || path.startsWith(href);
           <dl class="readout">
             <div><dt>This page</dt><dd>— KB</dd></div>
             <div><dt>Requests</dt><dd>—</dd></div>
-            <div><dt>JavaScript</dt><dd>None</dd></div>
+            <div><dt>JavaScript</dt><dd>— KB</dd></div>
             <div><dt>Built in</dt><dd>— s</dd></div>
           </dl>
         ) : (
@@ -101,8 +102,11 @@ const isCurrent = (href: string) => path === href || path.startsWith(href);
         <a href="/colophon/">How this site is built</a>
         {profile.links.github && <a href={profile.links.github}>GitHub</a>}
         {live['/writing/'] && <a href="/rss.xml">RSS</a>}
+        {/* Hidden until the critters' script shows it, so it never appears without JavaScript */}
+        <button type="button" class="critters-toggle" aria-pressed="true" hidden>Critters</button>
       </p>
     </footer>
+    <Critters />
   </body>
 </html>
 
@@ -209,6 +213,40 @@ const isCurrent = (href: string) => path === href || path.startsWith(href);
     gap: 0.25rem 1.5rem;
     margin: 0;
     color: var(--fg-muted);
+  }
+  /* The critters' on/off switch. The words and aria-pressed carry the state;
+     the square is a supporting cue. Padding with a matching negative margin
+     gives a taller target without changing the line. */
+  .critters-toggle {
+    padding: 0.35rem 0;
+    margin-block: -0.35rem;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    letter-spacing: inherit;
+    text-transform: inherit;
+    text-decoration: underline var(--accent) 0.08em;
+    text-underline-offset: 0.3em;
+    cursor: pointer;
+  }
+  .critters-toggle[hidden] {
+    display: none;
+  }
+  .critters-toggle::before {
+    content: '';
+    display: inline-block;
+    width: 0.7em;
+    height: 0.7em;
+    margin-right: 0.5em;
+    vertical-align: -0.05em;
+    border: 1px solid var(--accent);
+  }
+  .critters-toggle[aria-pressed='true']::before {
+    background: var(--accent);
+  }
+  .critters-toggle:hover {
+    color: var(--accent);
   }
   .unpublished {
     margin-bottom: var(--unit);
