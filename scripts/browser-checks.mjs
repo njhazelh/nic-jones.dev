@@ -3,8 +3,9 @@
 //      critters have started (so their switch is scanned). Fails on any
 //      violation, and on any console error or uncaught exception.
 //   2. The critters (src/lib/critters) stay decoration: with JavaScript off a
-//      page is unchanged, no text ever sits under one of their canvases, they
-//      keep still under reduced motion and they never print.
+//      page is unchanged, no word sits under a critter at rest (the tiger
+//      stands on the text, never in front of it), they keep still under
+//      reduced motion and they never print.
 //   3. With --pdf, prints /resume/ to dist/resume.pdf.
 // Needs `playwright` and `axe-core`, installed in CI with --no-save so they
 // don't count against the site's dependency budget.
@@ -49,27 +50,43 @@ for (const colorScheme of ['light', 'dark']) {
   await page.close();
 }
 
-// Text-node rects that overlap any critter canvas (there should be none)
-const textUnderCritters = (page) =>
+// Words with a drawn critter pixel over them (there should be none). A word
+// is measured from the top of its tallest letters to the bottom of its
+// descenders, which is the space the tiger keeps clear when it stands on a line.
+const wordsUnderCritters = (page) =>
   page.evaluate(() => {
-    // Margin canvases are fixed and cover every scroll position, so only their
-    // horizontal extent matters; the ledge canvas scrolls with the page.
-    const canvases = [...document.querySelectorAll('canvas.critters')].map((c) => {
-      const r = c.getBoundingClientRect();
-      const fixed = !c.classList.contains('critters-ledge');
-      return { left: r.left, right: r.right, top: fixed ? -Infinity : r.top, bottom: fixed ? Infinity : r.bottom };
-    });
+    const pen = document.createElement('canvas').getContext('2d');
+    const words = [];
     const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
-    const hits = [];
     for (let n; (n = walker.nextNode()); ) {
-      if (!n.textContent.trim() || n.parentElement.closest('script, style, .critter-tag')) continue;
+      const el = n.parentElement;
+      if (!n.textContent.trim() || el.closest('script, style, .critter-tag, .visually-hidden')) continue;
+      const cs = getComputedStyle(el);
+      pen.font = `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+      const tall = pen.measureText('Hd');
+      const low = pen.measureText('gjpy').actualBoundingBoxDescent;
       const range = document.createRange();
       range.selectNodeContents(n);
-      for (const r of range.getClientRects())
-        for (const c of canvases)
-          if (r.width && r.height && r.right > c.left && r.left < c.right && r.bottom > c.top && r.top < c.bottom) hits.push(n.textContent.trim().slice(0, 40));
+      for (const r of range.getClientRects()) {
+        const base = r.top + tall.fontBoundingBoxAscent;
+        if (r.width > 1) words.push([r.left, base - tall.actualBoundingBoxAscent, r.right, base + low, n.textContent.trim().slice(0, 40)]);
+      }
     }
-    return hits;
+    const hits = new Set();
+    for (const c of document.querySelectorAll('canvas.critters')) {
+      const r = c.getBoundingClientRect();
+      const kx = r.width / c.width;
+      const ky = r.height / c.height;
+      const data = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+      for (let y = 0; y < c.height; y++)
+        for (let x = 0; x < c.width; x++) {
+          if (data[(y * c.width + x) * 4 + 3] < 128) continue;
+          const px = r.left + (x + 0.5) * kx;
+          const py = r.top + (y + 0.5) * ky;
+          for (const w of words) if (px > w[0] && px < w[2] && py > w[1] && py < w[3]) hits.add(w[4]);
+        }
+    }
+    return [...hits];
   });
 
 for (const path of PAGES) {
@@ -81,16 +98,19 @@ for (const path of PAGES) {
   if ((await off.evaluate(() => getComputedStyle(document.querySelector('.critters-toggle')).display)) !== 'none') fail(`${path}: the Critters switch shows with JavaScript off`);
   await off.close();
 
+  // Under reduced motion every critter is at rest, so where they stand is fixed
   for (const [width, height] of [[1280, 720], [1440, 900], [375, 812]]) {
-    const page = await browser.newPage({ viewport: { width, height } });
+    const page = await browser.newPage({ viewport: { width, height }, reducedMotion: 'reduce' });
     watch(page, `${width}px ${path}`);
     await page.goto(BASE + path, { waitUntil: 'networkidle' });
     await started(page);
-    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-    await page.waitForTimeout(500);
+    for (const where of ['top', 'bottom']) {
+      if (where === 'bottom') await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+      await page.waitForTimeout(300);
+      const hits = await wordsUnderCritters(page);
+      if (hits.length) fail(`${width}px ${path} (${where}): words under a critter: ${hits.slice(0, 3).join(' | ')}`);
+    }
     if ((await page.evaluate(() => document.getElementById('main').innerText)) !== offText) fail(`${width}px ${path}: page text differs with JavaScript on`);
-    const hits = await textUnderCritters(page);
-    if (hits.length) fail(`${width}px ${path}: text under a critter canvas: ${hits.slice(0, 3).join(' | ')}`);
     await page.emulateMedia({ media: 'print' });
     if (!(await page.evaluate(() => [...document.querySelectorAll('canvas.critters, .critter-tag')].every((el) => getComputedStyle(el).display === 'none')))) fail(`${width}px ${path}: critters would print`);
     await page.close();
