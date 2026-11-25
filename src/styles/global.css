@@ -215,8 +215,11 @@ th {
 }
 .prose th { border-bottom-color: var(--rule-strong); }
 
+/* `*` alone misses pseudo-elements, such as the pulsing status dot */
 @media (prefers-reduced-motion: reduce) {
-  * { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+  *,
+  *::before,
+  *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
 
 @media print {
