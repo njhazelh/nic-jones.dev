@@ -5,7 +5,8 @@
 //   - every pixel character is in the palette, and every palette key is used
 //   - every colour is a theme token or a 'light:#rrggbb|dark:#rrggbb' pair
 //   - every variant key replaces a key the base palette has
-import { CAST, VARIANTS, GLYPHS } from '../src/lib/critters/sprites.ts';
+//   - the tiger's climb cycle names its frames and rises a whole 1 to 4 px a frame
+import { CAST, VARIANTS, GLYPHS, CLIMB } from '../src/lib/critters/sprites.ts';
 
 const TOKENS = new Set(['fg', 'muted', 'accent', 'bg', 'sunk']);
 const PAIR = /^light:#[0-9a-f]{6}\|dark:#[0-9a-f]{6}$/i;
@@ -52,6 +53,9 @@ for (const [name, v] of Object.entries(VARIANTS)) {
   checkPalette(`variant ${name}`, v.palette);
   for (const key of Object.keys(v.palette)) if (!(key in (CAST[name]?.palette ?? {}))) errors.push(`variant ${name}: "${key}" is not in the ${name} palette`);
 }
+
+for (const f of CLIMB.cycle) if (!(f in CAST.tiger.frames)) errors.push(`climb cycle: "${f}" is not a tiger frame`);
+if (!Number.isInteger(CLIMB.rise) || CLIMB.rise < 1 || CLIMB.rise > 4) errors.push(`climb rise: ${CLIMB.rise} should be a whole 1 to 4 px`);
 
 for (const e of errors) console.error(`error ${e}`);
 console.log(`check-sprites: ${errors.length} error(s); ${Object.keys(CAST).length} critters, ${frames} frames`);

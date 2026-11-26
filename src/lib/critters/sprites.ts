@@ -432,6 +432,53 @@ export const CAST = {
         '.kooooddkkcccccck.',
         '.kkkkkkkkkkkkkkk..',
       ],
+      // Climbing, hand over hand (A, B, C, B). Drawn upright with the wall on
+      // the cub's right, then stored turned clockwise so every frame is the
+      // same size: the engine turns them back (and mirrors them for a wall
+      // on the left).
+      climbA: [
+        '.........kkkkk....',
+        '........kossookk..',
+        '........ccoooonk..',
+        's.......ccooook...',
+        '.os.....cceeosk...',
+        '...kkkkkcnooook...',
+        '...kososcnooosk...',
+        '..ksosoocceeoonk..',
+        '.kdoooookcooookk..',
+        'kddooooookkkkk..k.',
+        'dd.oodoooooooooock',
+        'c..ckckkoooooooocc',
+      ],
+      climbB: [
+        '.........kkkkk....',
+        '........kossookk..',
+        '........ccoooonk..',
+        '........ccooook...',
+        'sos.....cceeosk...',
+        '...kkkkkcnooook...',
+        '...kososcnooosk...',
+        '..ksosoocceeoonk..',
+        '..koooookcooookk..',
+        '..dooooookkkkk....',
+        '..dooookck........',
+        '..cckkkcck........',
+      ],
+      climbC: [
+        '.........kkkkk....',
+        '........kossookk..',
+        '........ccoooonk..',
+        '........ccooook...',
+        '.os.....cceeosk...',
+        's..kkkkkcnooook...',
+        '..kkososcnooosk...',
+        '.kososoocceeoonk..',
+        'koooooookcooookk..',
+        'oo.ooooodkkkkk..k.',
+        'c..dokckddddddddck',
+        'c..ckkckddddddddcc',
+      ],
+
     },
   },
   // Seen from above, drawn facing up. The shell is the site accent: the one bug left in on purpose.
@@ -514,6 +561,10 @@ export const CAST = {
     },
   },
 } satisfies Record<string, Critter>;
+
+/** The tiger's climb: its frames in play order (eight a second), and how many
+ * sprite px it rises with each, so a paw on the wall stays where it was planted */
+export const CLIMB = { cycle: ['climbA', 'climbB', 'climbC', 'climbB'], rise: 2 };
 
 /** Rare colourings, rolled once per visit: palette keys that replace the base ones */
 export const VARIANTS = {
