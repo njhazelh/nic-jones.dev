@@ -1314,9 +1314,9 @@ const tiger: Step = (c, dt, night) => {
       return;
     case 'climb': { // up the side of the text, or of the screen: hand over hand
       const B = c.to!;
-      // Eight frames a second, rising a few sprite px with each so a paw on
+      // Ten frames a second, rising a few sprite px with each so a paw on
       // the wall stays where it was planted
-      const n = Math.floor(c.t * 8);
+      const n = Math.floor(c.t * 10);
       c.f = CLIMB.cycle[n % CLIMB.cycle.length];
       if (n > c.u) (c.y -= (n - c.u) * CLIMB.rise * q), (c.u = n);
       if (c.y + c.w <= feet(B)) {
