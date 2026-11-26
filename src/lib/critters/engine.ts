@@ -1,6 +1,6 @@
 // The critters: a jellyfish, a ghost, a tiger cub and a ladybird. Decoration
 // only: every canvas is aria-hidden and painted under the page, so the text is
-// always on top. On wide screens one canvas covers the window. The jellyfish,
+// always on top. On wide screens two canvases cover the window. The jellyfish,
 // the ghost and the ladybird keep to the margins; the tiger climbs the text,
 // standing on the tops of lines, headings and rules wherever there is room
 // above them, so it never stops behind a word. When the text fills the screen
@@ -73,7 +73,7 @@ interface Canvas {
   y: number;
   w: number;
   h: number;
-  sig: string; // what was drawn last; unchanged means no redraw
+  sig: string; // what was drawn last; unchanged means no redraw. '-' forces one, even of nothing
 }
 
 interface Fx {
@@ -327,7 +327,11 @@ function save() {
     mode,
     list: cast.map((c) => {
       // In the margins the tiger is wherever it stood in the window
-      if (c.kind === 'tiger' && mode === 'margins') return [+(c.x / vw).toFixed(3), +((c.y + c.h) / vh).toFixed(3), +c.asleep, 0, c.dir];
+      // (the bottom middle of what is drawn; a climber is on its side)
+      if (c.kind === 'tiger' && mode === 'margins') {
+        const up = c.st === 'climb';
+        return [+((c.x + (up ? c.h : c.w) / 2) / vw).toFixed(3), +((c.y + (up ? c.w : c.h)) / vh).toFixed(3), +(c.asleep || c.st === 'nap'), 0, c.dir];
+      }
       const z = sides[c.side];
       return [+((c.x - z.a) / Math.max(1, z.b - z.a)).toFixed(3), +(c.y / span).toFixed(3), +c.asleep, c.side, c.dir];
     }),
@@ -403,7 +407,7 @@ function terrain() {
   const walk = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
   for (let n: Node | null; (n = walk.nextNode()); ) {
     const el = n.parentElement;
-    if (!el || !n.nodeValue!.trim() || el.closest('script,style,.visually-hidden,.critter-tag')) continue;
+    if (!el || !n.nodeValue!.trim() || el.closest('script,style,pre,.visually-hidden,.critter-tag')) continue;
     const cs = getComputedStyle(el);
     if (cs.visibility !== 'visible') continue;
     const font = `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
@@ -436,8 +440,14 @@ function terrain() {
   if (ft) tops.push([col.l, col.r, box(ft).top + sy - 1]);
   for (const h of document.querySelectorAll('main h2')) {
     const ps = getComputedStyle(h, '::before');
+    if (ps.content === 'none') continue;
     const b = box(h);
-    if (ps.position === 'absolute') tops.push([b.left + sx + parseFloat(ps.left), b.left + sx + parseFloat(ps.left) + parseFloat(ps.width), b.top + sy + parseFloat(ps.top) - 1]);
+    const fs = parseFloat(ps.fontSize);
+    // The number itself is ink: in the rail under its rule, or above the heading
+    const L = b.left + sx + (ps.position === 'absolute' ? parseFloat(ps.left) : 0);
+    const T = b.top + sy + (ps.position === 'absolute' ? parseFloat(ps.top) + parseFloat(ps.borderTopWidth) + parseFloat(ps.paddingTop) : 0);
+    ink.push([L, T, L + 3 * fs, T + 1.2 * fs]);
+    if (ps.position === 'absolute') tops.push([L, L + parseFloat(ps.width), b.top + sy + parseFloat(ps.top) - 1]);
   }
   ink.sort((a, b) => a[1] - b[1]);
   // Join pieces of one line (a link, a word in italics), then keep the runs with headroom
@@ -468,9 +478,12 @@ function terrain() {
 function layout() {
   const want: number[][] = []; // world x, y, w, h, then style left, top
   if (mode === 'margins') {
-    // One sprite pixel taller than the window: draw() slides it up to keep
-    // the tiger in step with the text as the page scrolls
-    want.push([0, 0, Math.floor(vw / q) * q, Math.ceil(vh / q) * q + q, 0, 0]);
+    // Two over the window: one for whatever goes with the window, and one a
+    // sprite pixel taller for the tiger on the page, which draw() slides to
+    // keep it in step with the text as the page scrolls
+    const w = Math.floor(vw / q) * q;
+    const h = Math.ceil(vh / q) * q;
+    want.push([0, 0, w, h, 0, 0], [0, 0, w, h + q, 0, 0]);
   } else if (mode === 'ledge') {
     want.push([0, 0, ledge.w, ledge.h, ledge.x, ledge.y]);
   }
@@ -481,9 +494,9 @@ function layout() {
       const el = document.createElement('canvas');
       el.setAttribute('aria-hidden', 'true');
       document.body.append(el);
-      cv = canvases[i] = { el, ctx: el.getContext('2d')!, x, y, w, h, sig: '' };
+      cv = canvases[i] = { el, ctx: el.getContext('2d')!, x, y, w, h, sig: '-' };
     }
-    Object.assign(cv, { x, y, w, h, sig: '' });
+    Object.assign(cv, { x, y, w, h, sig: '-' });
     cv.el.className = mode === 'ledge' ? 'critters critters-ledge no-print' : 'critters no-print';
     cv.el.width = Math.max(1, Math.round(w / q));
     cv.el.height = Math.max(1, Math.round(h / q));
@@ -537,7 +550,7 @@ function readTheme() {
   const [r, g, b] = x.getImageData(0, 0, 1, 1).data;
   dark = 0.2126 * r + 0.7152 * g + 0.0722 * b < 128;
   atlas = new Map();
-  for (const cv of canvases) cv.sig = '';
+  for (const cv of canvases) cv.sig = '-';
 }
 
 const colour = (v: string) => (v.includes('|') ? (dark ? v.split('|')[1] : v.split('|')[0]).split(':')[1] : tok[v] || v);
@@ -785,14 +798,18 @@ function fit(c: Critter) {
       if (!c.fast) c.x = clamp(c.x, 0, ledge.w - c.w);
       return;
     }
-    // Back onto whatever is now under its feet, or down it goes
+    // Back onto whatever is now under its feet, or down it goes. Any plan
+    // was made on the old terrain.
+    if (c.resume !== 'happy') c.resume = '';
+    skip = null;
     if (/crouch|hop|climb/.test(c.st)) go(c, 'fall'), (c.pl = null);
     if (!c.pl) return;
     let best: Plat | null = null;
     for (const p of plats) if (Math.abs(feet(p) - c.y - c.h) < 40 && c.x + c.w > p.l && c.x < p.r && (!best || Math.abs(feet(p) - c.y - c.h) < Math.abs(feet(best) - c.y - c.h))) best = p;
-    c.pl = best;
-    if (best) (c.y = feet(best) - c.h), (c.x = clamp(c.x, best.l, best.r - c.w));
-    else go(c, 'fall'), (c.vx = c.vy = 0);
+    if (best) (c.pl = best), (c.y = feet(best) - c.h), (c.x = clamp(c.x, best.l, best.r - c.w));
+    // Nothing near: asleep or settled, it moves to the nearest place in view
+    else if (c.asleep || /sit|nap/.test(c.st)) place(c, c.x + c.w / 2, c.y + c.h);
+    else (c.pl = null), go(c, 'fall'), (c.vx = c.vy = 0);
     return;
   } else if (mode === 'margins') c.y = clamp(c.y, 0, vh - c.h);
   if (!c.fast) c.x = clamp(c.x, z.a, z.b - c.w);
@@ -836,6 +853,7 @@ function frame(ms: number) {
 
 function lightsOut() {
   lastStim = T - BEDTIME - 1;
+  held = null;
   for (const c of cast) {
     if (c.st === 'rise' || c.st === 'hold' || c.st === 'sink') go(c, 'hide');
     if (c.kind === 'tiger' && (!c.pl || /crouch|hop|climb|leap|fall|startled|lost|held/.test(c.st))) home(c);
@@ -863,14 +881,19 @@ function update(dt: number) {
   fx = fx.filter((f) => ((f.age += dt), (f.y += f.vy * dt), f.age < f.life));
 }
 
-// The tiger stands on the page, so it scrolls with the page. Jellyfish read
-// as deeper than the text: they move a quarter of the scroll.
+// Does the tiger go with the page (on the text, or in the air over the
+// column) rather than with the window (held, or on or over a margin's floor)?
+const paged = (c: Critter) =>
+  mode === 'margins' && c.kind === 'tiger' && c.st !== 'held' && (c.pl ? !!c.pl.d : !sides.some((z) => c.x + c.w / 2 > z.a && c.x + c.w / 2 < z.b));
+
+// The tiger on the page scrolls with the page. Jellyfish read as deeper than
+// the text: they move a quarter of the scroll.
 function onScroll() {
   const d = scrollY - lastScroll;
   lastScroll = scrollY;
   if (!d || mode !== 'margins') return;
   for (const c of cast) {
-    if (c.kind === 'tiger' && c.st !== 'held' && (!c.pl || c.pl.d)) c.y -= d;
+    if (paged(c)) c.y -= d;
     if (c.kind === 'jellyfish' && !c.asleep && !reduced && c.st !== 'held') c.y -= 0.25 * clamp(d, -40, 40);
   }
   if (!raf) draw();
@@ -1076,7 +1099,8 @@ const ghost: Step = (c, dt, night) => {
     case 'creep': // a patient pointer: come close, look pleased
       c.f = 'happy';
       if (!patient() || night) return go(c, 'float');
-      if (steer(c, ptr.x + (c.x > ptr.x ? 40 : -40 - c.w), clamp(ptr.y - c.h / 2, 0, vh - c.h), 20, dt) && c.dur === 0) {
+      // ...but never closer than the edge of its own margin, so it can't settle behind the text
+      if (steer(c, clamp(ptr.x + (c.x > ptr.x ? 40 : -40 - c.w), sides[c.side].a, sides[c.side].b - c.w), clamp(ptr.y - c.h / 2, 0, vh - c.h), 20, dt) && c.dur === 0) {
         c.dur = 1;
         puff('heart', c.x + c.w / 2 - 2.5 * q, c.y - 7 * q, -24 / 0.9, 0.9);
       }
@@ -1158,6 +1182,8 @@ const tiger: Step = (c, dt, night) => {
   const f = p ? feet(p) : c.y + c.h;
   const step = (period: number) => (Math.floor(c.t / period) % 2 ? 'walk2' : 'walk1');
   const face = (x: number) => (c.dir = x > c.x + c.w / 2 ? 1 : -1);
+  // Nothing underfoot (a re-measure took it away): down it goes
+  if (!p && /^(sit|walk|crouch|chase|stalk|wiggle|land|happy|nap)$/.test(c.st)) return (c.vx = c.vy = 0), void go(c, 'fall');
   // Feet on whatever it stands on, on the same pixel grid as the page
   const stand = () => {
     if (!p) return;
@@ -1192,7 +1218,7 @@ const tiger: Step = (c, dt, night) => {
   // The laser dot: a moving pointer within reach, over open page. A pointer
   // resting on the text belongs to someone reading.
   const pcx = ptr.x - c.w / 2;
-  const inBand = !!p && ptr.on && ptr.x > lo - 20 && ptr.x < hi + c.w + 20 && ptr.y > f - 200 * k && ptr.y < f + 40 && !overInk(ptr.x, ptr.y);
+  const inBand = !!p && ptr.on && ptr.x > lo - 20 && ptr.x < hi + c.w + 20 && ptr.y > f - 200 * k && ptr.y < f + 40 && !overInk(ptr.x, ptr.y, 7);
   const idle = c.st === 'sit' || c.st === 'walk';
   if (!c.fast && idle && !night && inBand && T > c.cool && Math.hypot(ptr.x - ptr.cx, ptr.y - ptr.cy) > 20) {
     face(ptr.x);
@@ -1201,15 +1227,16 @@ const tiger: Step = (c, dt, night) => {
     if (Math.abs(pcx - c.x) <= 160 * k) go(c, 'wiggle', rnd(0.5, 0.9));
     else go(c, 'chase');
   }
-  // Scrolled out of sight: it comes after the reader
+  // Scrolled out of sight, or fallen off the window: it comes after the reader
   if (mode === 'margins' && !night) {
-    c.away = (c.y + c.h < 0 || c.y > vh) && /^(sit|walk|nap|lost|happy|chase|stalk)$/.test(c.st) ? c.away + dt : 0;
+    c.away = c.st === 'lost' || ((c.y + c.h < 0 || c.y > vh) && /^(sit|walk|nap|happy|chase|stalk)$/.test(c.st)) ? c.away + dt : 0;
     if (c.away > (c.st === 'nap' ? 8 : 1.2)) return drop(c);
   }
   if (c.st !== 'climb') c.tf = c.dir < 0 ? 1 : 0;
   switch (c.st) {
     case 'walk': {
       c.f = step(0.17);
+      if (!c.fast) c.tx = clamp(c.tx, lo, hi);
       face(c.tx + c.w / 2);
       // A stroll, or a trot when it's going somewhere
       c.x += Math.sign(c.tx - c.x) * Math.min((c.resume ? 70 : c.fast ? 40 : 22) * k * dt, Math.abs(c.tx - c.x));
@@ -1226,7 +1253,6 @@ const tiger: Step = (c, dt, night) => {
           return (c.resume = ''), go(c, 'climb');
         }
         if (c.resume === 'jump' || c.resume === 'drop') {
-          skip = c.to && feet(c.to) > f ? p : null; // going down: past the edge of this one
           c.resume = '';
           face(c.cx + c.w / 2);
           return go(c, 'crouch', 0.2);
@@ -1238,7 +1264,10 @@ const tiger: Step = (c, dt, night) => {
     case 'crouch': // winding up to jump
       c.f = 'crouch';
       stand();
-      if (c.t >= c.dur && c.to) hop(c, c.cx, c.to);
+      if (c.t >= c.dur && c.to) {
+        skip = feet(c.to) > f ? p : null; // going down: past the edge of this one
+        hop(c, c.cx, c.to);
+      }
       return;
     case 'hop':
       c.f = 'leap';
@@ -1329,7 +1358,7 @@ const tiger: Step = (c, dt, night) => {
       c.f = 'walk1';
       c.pl = null;
       c.tx = clamp(c.tx, 0, (mode === 'ledge' ? ledge.w : vw) - c.w);
-      c.ty = clamp(c.ty, 0, (mode === 'ledge' ? floorY : vh) - c.h);
+      c.ty = clamp(c.ty, 0, floorY - c.h);
       spring(c, 150, 18, dt);
       return;
     case 'fall':
@@ -1345,7 +1374,7 @@ const tiger: Step = (c, dt, night) => {
       }
       return;
     case 'lost': // off the bottom of the window; drop() brings it back
-      if (night) bed(c);
+      if (night) home(c), bed(c, true);
       return;
     case 'nap':
       c.f = Math.floor(c.t) % 2 ? 'sleep2' : 'sleep1';
@@ -1369,6 +1398,7 @@ const tiger: Step = (c, dt, night) => {
         let x = rnd(lo, hi);
         if (Math.abs(x - c.x) < 40) x = clamp(c.x + (x > c.x ? 60 : -60), lo, hi);
         c.tx = x;
+        c.resume = ''; // a stroll, not the rest of an old plan
         go(c, 'walk');
       }
   }
@@ -1378,8 +1408,10 @@ const feet = (p: Plat) => p.y - p.d * scrollY;
 // In view, with room for the tiger above
 const seen = (p: Plat) => !p.d || (feet(p) >= CAST.tiger.frames.sit.length * q && feet(p) <= vh - 2);
 
-// Is the window point (x, y) on text or a picture?
-const overInk = (x: number, y: number) => ink.some((b) => x + scrollX > b[0] - 2 && x + scrollX < b[2] + 2 && y + scrollY > b[1] - 2 && y + scrollY < b[3] + 2);
+// Is the window point (x, y) on text or a picture, give or take pad px? A
+// pad of 7 also covers the leading between lines, which is still reading.
+const overInk = (x: number, y: number, pad = 2) =>
+  ink.some((b) => x + scrollX > b[0] - pad && x + scrollX < b[2] + pad && y + scrollY > b[1] - pad && y + scrollY < b[3] + pad);
 
 // Where the tiger can go from here: any place in view a jump away (up to
 // three heights up, any distance down, across a gap of up to three lengths),
@@ -1454,7 +1486,8 @@ function hop(c: Critter, x1: number, B: Plat) {
 function drop(c: Critter) {
   const ps = plats.filter((p) => p.d && seen(p));
   c.away = 0;
-  if (!ps.length) return go(c, 'lost');
+  c.resume = '';
+  if (!ps.length) return (c.pl = null), (c.y = vh + 4), void go(c, 'lost');
   const top = c.y < vh / 2;
   const i = Math.floor(Math.random() * Math.min(3, ps.length));
   const p = ps[top ? i : ps.length - 1 - i];
@@ -1477,7 +1510,7 @@ function place(c: Critter, x: number, y: number) {
   c.pl = best;
   if (!best) return go(c, 'lost'), void (c.y = vh + 4);
   c.x = clamp(x - c.w / 2, best.l, best.r - c.w);
-  c.y = feet(best) - c.h;
+  c.y = Math.floor((best.y - c.h) / q) * q - best.d * scrollY;
 }
 
 // Can the tiger get at the ladybird? Close along the ledge, or low on the wall near where it stands.
@@ -1641,19 +1674,23 @@ function social(night: boolean) {
 
 const toWorld = (cx: number, cy: number) => (mode === 'ledge' ? [cx + scrollX - ledge.x, cy + scrollY - ledge.y] : [cx, cy]);
 
-// Is (x, y) on one of the canvases? Critters are only real where they can be seen.
+// Is (x, y) on one of the canvases?
 const onCanvas = (x: number, y: number) => canvases.some((cv) => x >= cv.x && x < cv.x + cv.w && y >= cv.y && y < cv.y + cv.h);
 
 // The topmost critter at (x, y). Mice and pens hit the critter's own pixels
 // (one pixel of slack); a finger gets the box plus 14 px.
 function hit(x: number, y: number, touch: boolean) {
-  if (!onCanvas(x, y)) return null;
+  // Text and pictures are painted over the critters: a press on them is the page's
+  if (!onCanvas(x, y) || (mode === 'margins' && overInk(x, y))) return null;
   for (let i = drawOrder.length - 1; i >= 0; i--) {
     const c = drawOrder[i];
-    if (!visible(c)) continue;
+    // A ghost gone faint behind the column is out of reach there
+    if (!visible(c) || fade(c) < 1) continue;
     const top = c.y + c.by;
     if (touch) {
-      if (x > c.x - 14 && x < c.x + c.w + 14 && y > top - 14 && y < top + c.h + 14) return c;
+      const w = c.st === 'climb' ? c.h : c.w; // a climber is on its side
+      const h = c.st === 'climb' ? c.w : c.h;
+      if (x > c.x - 14 && x < c.x + w + 14 && y > top - 14 && y < top + h + 14) return c;
       continue;
     }
     const gx = Math.floor((x - c.x) / q);
@@ -1667,7 +1704,10 @@ function hit(x: number, y: number, touch: boolean) {
 // Moving the pointer in the critters' own space counts as company; reading
 // with the pointer parked over the text does not.
 function inTheirSpace(cx: number, cy: number) {
-  if (mode === 'margins') return cx < col.l || cx >= col.r || cast.some((c) => visible(c) && cx > c.x - 60 && cx < c.x + c.w + 60 && cy > c.y - 60 && cy < c.y + c.h + 60);
+  // In the column, open page near a critter counts (for the tiger, as far as it pounces)
+  const near = (c: Critter) =>
+    c.kind === 'tiger' ? Math.abs(cx - c.x - c.w / 2) < 260 && cy > c.y - 160 && cy < c.y + c.h + 40 : cx > c.x - 60 && cx < c.x + c.w + 60 && cy > c.y - 60 && cy < c.y + c.h + 60;
+  if (mode === 'margins') return cx < col.l || cx >= col.r || (!overInk(cx, cy, 7) && cast.some((c) => visible(c) && fade(c) === 1 && near(c)));
   const [x, y] = toWorld(cx, cy);
   return x > -40 && x < ledge.w + 40 && y > -40 && y < ledge.h + 40;
 }
@@ -1792,10 +1832,11 @@ function onUp(e: PointerEvent) {
   // A tap on open page near what the tiger stands on: it pounces there
   const tg = find('tiger');
   const p = tg?.pl;
-  if (touch && tg && p && !reduced && onCanvas(x, y) && y > feet(p) - 140 && y < feet(p) + 20 && x > p.l - 20 && x < p.r + 20 && !overInk(x, y)) {
+  if (touch && tg && p && !reduced && onCanvas(x, y) && y > feet(p) - (mode === 'ledge' ? 140 : tg.h + 20) && y < feet(p) + 20 && x > p.l - 20 && x < p.r + 20 && !overInk(x, y, 7)) {
     if (tg.asleep || tg.st === 'nap') return rouse(tg), wake();
     if (tg.st === 'sit' || tg.st === 'walk') {
       tg.tx = x - tg.w / 2;
+      tg.resume = '';
       tg.hunt = 2; // aimed at a spot, not the pointer
       tg.dir = x > tg.x ? 1 : -1;
       go(tg, 'wiggle', 0.3);
@@ -1843,7 +1884,9 @@ function poke(c: Critter) {
     else go(c, 'boo');
   } else if (c.kind === 'tiger') {
     if (wasAsleep) startle(c);
-    else if (c.st !== 'leap' && c.st !== 'fall') {
+    // Not mid-move: a jump, a climb or a fall carries on
+    else if (c.pl && !/crouch|hop|climb|leap|fall|startled/.test(c.st)) {
+      c.resume = '';
       go(c, 'happy', 0.9);
       puff('heart', c.x + c.w / 2 - 2.5 * q, c.y - 6 * q, -24 / 0.9, 0.9);
     }
@@ -1943,13 +1986,13 @@ function placeTag() {
 // ---------------------------------------------------------------------- draw
 
 function draw() {
-  // The window canvas slides up by the scroll's remainder of a sprite pixel,
-  // so the page's grid and the canvas's stay one: the tiger never shimmers
-  // against the text as the page scrolls.
-  if (mode === 'margins' && canvases[0]) {
-    const cv = canvases[0];
+  // The page canvas slides up by the scroll's remainder of a sprite pixel,
+  // so its grid and the page's stay one: the tiger never shimmers against the
+  // text as the page scrolls. Everything else keeps still on the window canvas.
+  const page = mode === 'margins' ? canvases[1] : null;
+  if (page) {
     const oy = -(scrollY % q);
-    if (cv.y !== oy) (cv.y = oy), (cv.el.style.transform = `translateY(${oy}px)`), (cv.sig = '');
+    if (page.y !== oy) (page.y = oy), (page.el.style.transform = `translateY(${oy}px)`), (page.sig = '-');
   }
   for (const cv of canvases) {
     const items: [Img, number, number, number][] = [];
@@ -1963,7 +2006,7 @@ function draw() {
       sig += `${im.k}${px},${py},${Math.round(a * 20)};`;
     };
     for (const c of drawOrder) {
-      if (!visible(c)) continue;
+      if (!visible(c) || (cv === page) !== paged(c)) continue;
       const y = c.y + c.by;
       const a = c.a * fade(c);
       if (dark) add(sprite(c, true), c.x, y, (T < c.glowTo ? 0.38 : c.kind === 'jellyfish' ? 0.16 : 0.12) * a);
@@ -1973,7 +2016,7 @@ function draw() {
         add(glyph('z'), clamp(zx, q, (mode === 'ledge' ? ledge.w : vw) - 6 * q), c.y - (c.kind === 'tiger' ? q : 6 * q), 1);
       }
     }
-    for (const f of fx) add(glyph(f.g), f.x, f.y, f.age < f.life / 2 ? 1 : 2 * (1 - f.age / f.life));
+    if (cv !== page) for (const f of fx) add(glyph(f.g), f.x, f.y, f.age < f.life / 2 ? 1 : 2 * (1 - f.age / f.life));
     if (sig === cv.sig) continue;
     cv.sig = sig;
     cv.ctx.clearRect(0, 0, cv.el.width, cv.el.height);
