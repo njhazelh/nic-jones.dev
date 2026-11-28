@@ -3,7 +3,7 @@
 //     fetches automatically must be relative. Plain <a> links may go anywhere.
 //   - No phone number in any built page.
 //   - Home page under the 100 KB transfer budget (gzip, page + subresources).
-//   - No page runs more than 18 KB of JavaScript (gzip), all of it in one
+//   - No page runs more than 24 KB of JavaScript (gzip), all of it in one
 //     module script with no modulepreload, so the footer readout counts it all.
 //   - Built JavaScript holds no absolute URL (a fetch to another host).
 //   - Every page's link-preview card (og:image) was generated.
@@ -12,7 +12,7 @@ import { join, relative } from 'node:path';
 
 const DIST = new URL('../dist/', import.meta.url).pathname;
 const BUDGET_KB = 100;
-const JS_BUDGET_KB = 18;
+const JS_BUDGET_KB = 24;
 
 async function* walk(dir) {
   for (const e of await readdir(dir, { withFileTypes: true })) {

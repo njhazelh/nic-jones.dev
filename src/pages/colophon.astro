@@ -40,23 +40,30 @@ const source = 'https://github.com/njhazelh/nick-jones.me';
 
   <h2>The critters</h2>
   <p>
-    A jellyfish, a ghost, a tiger cub and a ladybird live around the text. They're there to be played with. Hover over
-    one to see what it's doing, click it, or pick it up and throw it. The tiger chases your pointer, the ghost gets shy
-    if you rush at it, and the ladybird is the one bug I leave in on purpose. The tiger hasn't caught it yet.
+    A tiger cub, jellyfish, Andrew the Bernese mountain dog, a critter for the time of year and a few bugs live around
+    the text. They're there to be played with. Hover over one to see what it's doing, click it, or pick it up and throw
+    it. The tiger chases your pointer. The bugs are the ones I leave in on purpose: three hide on every page, each a
+    ladybird, a spider, a firefly, a beetle, an ant or a caterpillar. They could be anywhere on the page, and they move
+    if you lunge at them. The tiger hasn't caught one yet.
+  </p>
+  <p>
+    The critter for the time of year follows the calendar. A ghost haunts October, a turkey poult turns up for Thanksgiving
+    week, a reindeer calf for the winter holidays, a lovebird the week before Valentine's Day, a frog for St Patrick's
+    Day and a bunny the week before Easter. The rest of the year it's the season's: a penguin chick in winter, a
+    butterfly in spring, a firefly in summer and a hedgehog in autumn.
   </p>
   <p>
     They're drawn a pixel at a time, {frames} frames in all, and scaled up by a whole number of screen pixels so they
-    stay sharp. The jellyfish, the ghost and the ladybird keep to the margins. The tiger climbs the text. It stands on
-    the tops of lines and headings wherever there is room above them, jumps from one to the next, and climbs the side
-    of a paragraph to reach the line above. When you scroll away, it follows you. The ghost goes faint when it drifts
-    behind the text to the other margin.
+    stay sharp. The jellyfish, Andrew and the season's critter keep to the margins. The tiger starts at the top of
+    the page and climbs the text. It stands on the tops of lines and headings wherever there is room above them, jumps from one to
+    the next, and climbs the side of a paragraph to reach the line above. When you scroll away, it follows you.
   </p>
   <p>
-    They're all drawn under the page, so the words are always on top. The tiger only stops where it
-    covers none of them, and a check on every pull request looks for a word under a resting critter on every page. On a phone,
-    where the text fills the screen, they wait on the line above the footer, and once you get there the tiger climbs
-    back up the page. If you move through a page with
-    the keyboard, the ladybird keeps level with whatever has focus.
+    They're all drawn under the page, so the words are always on top. The tiger and the bugs only stop where they cover
+    none of them, and a check on every pull request looks for a word under a resting critter on every page. On a
+    phone, where the text fills the screen, the others wait on the line above the footer while the tiger roams the page,
+    climbing the edges of the screen. If you move through a page with the keyboard, a jellyfish keeps level with
+    whatever has focus.
   </p>
   <p>
     The script that moves them was written for them, with no library. It starts after the page has loaded, stops in a
@@ -76,7 +83,7 @@ const source = 'https://github.com/njhazelh/nick-jones.me';
     </thead>
     <tbody>
       <tr><td>Home page under 100 KB transferred</td><td>Measured from the built files after every build</td></tr>
-      <tr><td>Under 18 KB of JavaScript on any page, and none needed to read it</td><td>Measured from the built files after every build, and every page is checked with JavaScript off on every pull request</td></tr>
+      <tr><td>Under 24 KB of JavaScript on any page, and none needed to read it</td><td>Measured from the built files after every build, and every page is checked with JavaScript off on every pull request</td></tr>
       <tr><td>No request to any other host</td><td>The built HTML, CSS and JavaScript are scanned for outside addresses</td></tr>
       <tr><td>No phone number anywhere</td><td>The built pages are scanned for anything shaped like one</td></tr>
       <tr><td>No copy that goes stale</td><td>A lint fails the build on words that pin a sentence to a moment or promise a schedule</td></tr>
@@ -121,7 +128,7 @@ const source = 'https://github.com/njhazelh/nick-jones.me';
       <tr>
         <td>Critters drawn by hand</td>
         <td>A sprite or game library</td>
-        <td>The cast and the script that moves them weigh less than one of the fonts</td>
+        <td>The cast and the script that moves them weigh about as much as one of the fonts</td>
       </tr>
       <tr>
         <td>Fonts served from this domain</td>
