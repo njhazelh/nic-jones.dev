@@ -1912,7 +1912,7 @@ function inTheirSpace(cx: number, cy: number, mouse = true) {
   const [x, y] = toWorld(cx, cy);
   const near = (c: Critter) =>
     c.kind === 'tiger' ? Math.abs(x - c.x - c.w / 2) < 260 && y > c.y - 160 && y < c.y + c.h + 40 : x > c.x - 60 && x < c.x + c.w + 60 && y > c.y - 60 && y < c.y + c.h + 60;
-  const company = mouse && !overInk(x, y, 7) && cast.some((c) => visible(c) && fade(c) === 1 && (mode === 'margins' || c.kind === 'tiger') && near(c));
+  const company = mouse && !overInk(x, y, 7) && cast.some((c) => visible(c) && fade(c) === 1 && (mode === 'margins' || paged(c)) && near(c)); // (on a phone, the tiger and the bugs are out on the page)
   if (mode === 'margins') return cx < col.l || cx >= col.r || company;
   return (x > -40 && x < ledge.w + 40 && y > -40 && y < ledge.h + 40) || company;
 }
