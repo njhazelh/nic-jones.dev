@@ -2146,7 +2146,8 @@ function placeTag() {
   }
   const [tw, th] = tagSize;
   const ledged = mode === 'ledge';
-  const [vl, vt, vr, vb] = ledged && c.kind !== 'tiger' ? [0, 0, ledge.w, ledge.h] : view();
+  // (on a phone the tiger and the bug are out on the page; the others stay in the ledge)
+  const [vl, vt, vr, vb] = ledged && !paged(c) ? [0, 0, ledge.w, ledge.h] : view();
   const ox = ledged ? 0 : scrollX; // to the ink's coordinates
   const oy = ledged ? 0 : scrollY;
   const w = c.st === 'climb' ? c.h : c.w; // a climber is turned on its side
@@ -2154,12 +2155,15 @@ function placeTag() {
   const top = c.y + c.by;
   // Above, below, right, left: the first that fits and covers no text
   const spots = visible(c) && tw < vr - vl - 8 ? [[c.x + w / 2 - tw / 2, top - th - 8], [c.x + w / 2 - tw / 2, top + h + 8], [c.x + w + 6, top], [c.x - tw - 6, top]] : [];
-  for (let i = 0; i < spots.length; i++) {
-    const t = spots[i][1];
-    const x = i < 2 ? clamp(spots[i][0], vl + 4, vr - 4 - tw) : spots[i][0];
+  // A "found" tag the reader asked for, with no clear space anywhere near,
+  // may cover a few words for its two and a half seconds; others never do
+  const found = performance.now() < tagHold;
+  for (let i = 0; i < spots.length * (found ? 2 : 1); i++) {
+    const t = spots[i % spots.length][1];
+    const x = i % spots.length < 2 ? clamp(spots[i % spots.length][0], vl + 4, vr - 4 - tw) : spots[i % spots.length][0];
     const X = x + ox;
     const Y = t + oy;
-    if (x < vl + 4 || x + tw > vr - 4 || t < vt + 2 || t + th > vb - 2 || ink.some((b) => b[0] < X + tw + 4 && b[2] > X - 4 && b[1] < Y + th + 4 && b[3] > Y - 4)) continue;
+    if (x < vl + 4 || x + tw > vr - 4 || t < vt + 2 || t + th > vb - 2 || (i < spots.length && ink.some((b) => b[0] < X + tw + 4 && b[2] > X - 4 && b[1] < Y + th + 4 && b[3] > Y - 4))) continue;
     tag.classList.toggle('in-ledge', ledged);
     tag.style.visibility = '';
     tag.style.left = `${ledged ? x + ledge.x : x}px`;
