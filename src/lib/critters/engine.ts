@@ -1,5 +1,6 @@
-// The critters: jellyfish, a tiger cub, a ladybird hiding somewhere on the
-// page, and a critter for the season or holiday (a ghost in October). Decoration
+// The critters: jellyfish, a tiger cub, three bugs hiding somewhere on the
+// page, Andrew the Bernese mountain dog, and a critter for the season or
+// holiday (a ghost in October). Decoration
 // only: every canvas is aria-hidden and painted under the page, so the text is
 // always on top. On wide screens two canvases cover the window. The jellyfish
 // and the season's critter keep to the margins; the tiger climbs the text,
@@ -11,7 +12,7 @@
 // One canvas pixel is one sprite pixel; the browser scales each canvas up by a
 // whole number of device pixels, so the art stays sharp at any zoom or DPR.
 // Sprites live in ./sprites.ts. The colophon explains the why.
-import { CAST, VARIANTS, GLYPHS, CLIMB, SEASONAL, type Palette } from './sprites';
+import { CAST, VARIANTS, GLYPHS, CLIMB, SEASONAL, FRIENDS, BUGS, type Palette } from './sprites';
 
 type Kind = keyof typeof CAST;
 type Img = HTMLCanvasElement & { k: string };
@@ -30,7 +31,7 @@ interface Critter {
   f: string; // frame
   pose: string; // a frame shown instead of f until poseTo
   poseTo: number;
-  dir: number; // facing: 1 right (or up, for the ladybird), -1 left (or down)
+  dir: number; // facing: 1 right, -1 left
   a: number; // alpha
   side: number; // 0 left margin, 1 right
   rare: boolean;
@@ -47,7 +48,7 @@ interface Critter {
   near: number; // last time the pointer came within 200 px
   cool: number; // no pounce before this
   fast: boolean; // entering: moves at entrance speed, unclamped
-  hunt: number; // what this pounce is at: 0 the pointer, 1 the ladybird, 2 a tapped spot
+  hunt: number; // what this pounce is at: 0 the pointer, 1 a bug, 2 a tapped spot
   path: number[]; // flight: x0 y0 cx cy x1 y1
   u: number; // flight progress 0..1
   resume: string; // the tiger's next move: 'jump' or 'climb' once it has walked into place, 'happy' after a fall
@@ -93,10 +94,13 @@ interface Fx {
   life: number;
 }
 
-const NAMES: Record<string, string> = { jellyfish: '01 JELLYFISH', tiger: '03 TIGER CUB', ladybird: '04 LADYBIRD' };
-const IDLE_WORD: Record<string, string> = { jellyfish: 'DRIFTING', tiger: 'SITTING', ladybird: 'HIDING' };
+const NAMES: Record<string, string> = { jellyfish: '01 JELLYFISH', tiger: '03 TIGER CUB' };
+const IDLE_WORD: Record<string, string> = { jellyfish: 'DRIFTING', tiger: 'SITTING' };
+for (const [k, v] of Object.entries(BUGS)) (NAMES[k] = '04 ' + v), (IDLE_WORD[k] = 'HIDING');
 for (const [k, v] of Object.entries(SEASONAL)) (NAMES[k] = '02 ' + v.name), (IDLE_WORD[k] = v.verb);
-const style = (c: Critter) => (SEASONAL as Record<string, { style: string }>)[c.kind]?.style;
+for (const [k, v] of Object.entries(FRIENDS)) (NAMES[k] = '05 ' + v.name), (IDLE_WORD[k] = v.verb);
+const isBug = (c: Critter) => c.kind in BUGS;
+const style = (c: Critter) => ({ ...SEASONAL, ...FRIENDS } as Record<string, { style: string }>)[c.kind]?.style;
 const WORDS: Record<string, string> = {
   held: 'HELD', shy: 'SHY', creep: 'CURIOUS', boo: 'BOO', booT: 'BOO', walk: 'WALKING', stalk: 'STALKING',
   wiggle: 'STALKING', chase: 'STALKING', leap: 'POUNCING', happy: 'PURRING', fall: 'FALLING', nap: 'NAPPING',
@@ -144,6 +148,7 @@ let plats: Plat[] = [];
 let ink: number[][] = []; // l, t, r, b in document px: text and pictures, never to be stood in front of
 let skip: Plat | null = null; // where the tiger is stepping off, so it doesn't land back on it
 let ground: Plat | null = null; // the ledge's floor
+let prey: Critter | null = null; // the bug the tiger is after
 let ledge = { x: 0, y: 0, w: 0, h: 0 }; // document px
 let ledgeSeen = false;
 let ledgeVisible = false;
@@ -716,14 +721,17 @@ function spawn(world: typeof session.world | null, rest = false) {
   root.style.cursor = '';
   root.classList.remove('critters-grabbing');
   const S = season();
+  const kinds = (Object.keys(BUGS) as Kind[]).filter((k) => k in CAST);
+  const bugs = (side: number) => [0, 1, 2].map(() => make(kinds[Math.floor(Math.random() * kinds.length)], side));
   if (mode === 'margins') {
     cast.push(make('jellyfish', session.sideA, rj1));
     if (Math.min(sides[0].b, vw - sides[1].a) + 16 >= 240) cast.push(make('jellyfish', B, rj2));
-    cast.push(make(S, B), make('tiger', B, rt), make('ladybird', B));
+    cast.push(make(S, B), make('tiger', B, rt), ...bugs(B));
   } else if (mode === 'ledge') {
-    cast.push(make('tiger', 0, rt), make('ladybird', 0), make(S, 0), make('jellyfish', 0, rj1));
+    cast.push(make('tiger', 0, rt), ...bugs(0), make(S, 0), make('jellyfish', 0, rj1));
   }
-  drawOrder = (['ladybird', 'tiger', 'jellyfish', S] as Kind[]).flatMap((k) => cast.filter((c) => c.kind === k));
+  if (mode !== 'none' && 'andrew' in CAST) cast.push(make('andrew' as Kind, session.sideA));
+  drawOrder = cast.filter(isBug).concat((['tiger', 'andrew', 'jellyfish', S] as Kind[]).flatMap((k) => cast.filter((c) => c.kind === k)));
   const fits = world && world.mode === mode && world.list.length === cast.length;
   cast.forEach((c, i) => {
     home(c);
@@ -733,7 +741,7 @@ function spawn(world: typeof session.world | null, rest = false) {
       // The tiger comes back to its place in the window; the bug finds a new
       // hiding place on every page
       if (c.kind === 'tiger') place(c, view()[0] + fx_ * vw, view()[1] + fy * vh);
-      else if (c.kind !== 'ladybird') {
+      else if (!isBug(c)) {
         c.side = side;
         const z = sides[side];
         c.x = z.a + fx_ * (z.b - z.a);
@@ -748,7 +756,7 @@ function spawn(world: typeof session.world | null, rest = false) {
 }
 
 // Point the sprite the way the critter faces (the steps do this while it's awake)
-const orient = (c: Critter) => (c.tf = c.kind === 'ladybird' ? (c.dir > 0 ? 3 : 4) : c.kind === 'jellyfish' || c.dir > 0 ? 0 : 1);
+const orient = (c: Critter) => (c.tf = isBug(c) ? (c.dir > 0 ? 3 : 4) : c.kind === 'jellyfish' || c.dir > 0 ? 0 : 1);
 
 // Where each critter rests; also the still life under reduced motion
 function home(c: Critter) {
@@ -785,15 +793,16 @@ function home(c: Critter) {
     c.next = T + rnd(2, 5);
     const p = plats.filter((p) => !floor(p) && seen(p)).sort((a, b) => a.y - b.y)[0];
     place(c, p ? (p.l + p.r) / 2 : 0, p ? feet(p) : vh);
-  } else if (c.kind === 'ladybird') hide(c);
+  } else if (isBug(c)) hide(c);
   else {
     // The season's walkers sit on the floor of their margin (or the ledge),
-    // and its fliers rest there
-    c.side = mode === 'margins' ? 1 - session.sideA : 0;
+    // and its fliers rest there; Andrew has the other margin
+    const dog = c.kind === 'andrew';
+    c.side = mode === 'margins' ? (dog ? session.sideA : 1 - session.sideA) : 0;
     const zs = sides[c.side];
     go(c, style(c) === 'flutter' ? 'rest' : 'sit', rnd(2, 6));
     c.f = style(c) === 'flutter' ? 'rest' : 'sit';
-    c.x = zs.a + (zs.b - zs.a - c.w) * (c.side ? 0.3 : 0.7);
+    c.x = zs.a + (zs.b - zs.a - c.w) * (dog ? 0.2 : c.side ? 0.3 : 0.7);
     c.y = floorY - c.h;
     c.dir = c.side ? -1 : 1;
   }
@@ -808,14 +817,14 @@ function enter(c: Critter) {
     c.y = view()[1] - c.h - 8;
     c.pl = null;
     go(c, 'fall');
-  } else if (c.kind === 'ladybird') return;
+  } else if (isBug(c)) return;
   else if (style(c) && c.kind !== 'ghost') {
     // The season's critter comes in from its edge of the window (on a phone,
     // once the reader first reaches the ledge)
     c.wait = ledged ? (ledgeSeen ? 0 : 1e9) : 1.4;
     c.fast = true;
     c.tx = c.x;
-    c.x = c.side || ledged ? (ledged ? ledge.w : vw) : -c.w;
+    c.x = ledged ? (c.kind === 'andrew' ? -c.w : ledge.w) : c.side ? vw : -c.w; // (on the ledge Andrew's home is on the left)
     if (style(c) === 'flutter') (c.y = -c.h), (c.ty = floorY - c.h - 60), (c.next = T + 2), go(c, 'fly');
     else go(c, 'walk');
   } else if (!ledged) {
@@ -841,7 +850,7 @@ function fit(c: Critter) {
   c.h = f.length * q;
   const z = sides[c.side];
   if (c.kind === 'ghost' && mode === 'margins') c.y = clamp(c.y, 0, vh - c.h);
-  else if (c.kind === 'ladybird') return hide(c); // the terrain changed: somewhere new
+  else if (isBug(c)) return hide(c); // the terrain changed: somewhere new
   else if (style(c) && c.kind !== 'ghost') c.y = style(c) === 'flutter' && c.st !== 'rest' ? clamp(c.y, 0, floorY - c.h) : floorY - c.h;
   else if (c.kind === 'tiger') {
     if (mode === 'ledge' && c.fast && c.pl === ground) return void ((c.pl = ground), (c.y = floorY - c.h));
@@ -931,7 +940,7 @@ function update(dt: number) {
 // Does the tiger go with the page (on the text, or in the air over the
 // column) rather than with the window (held, or on or over a margin's floor)?
 const paged = (c: Critter) =>
-  c.kind === 'ladybird' ? mode !== 'none' : c.kind === 'tiger' && (mode === 'ledge' || (mode === 'margins' && c.st !== 'held' && (c.pl ? !!c.pl.d : !sides.some((z) => c.x + c.w / 2 > z.a && c.x + c.w / 2 < z.b))));
+  isBug(c) ? mode !== 'none' : c.kind === 'tiger' && (mode === 'ledge' || (mode === 'margins' && c.st !== 'held' && (c.pl ? !!c.pl.d : !sides.some((z) => c.x + c.w / 2 > z.a && c.x + c.w / 2 < z.b))));
 
 // The tiger on the page scrolls with the page. Jellyfish read as deeper than
 // the text: they move a quarter of the scroll.
@@ -941,7 +950,7 @@ function onScroll() {
   if (!d || mode !== 'margins') return;
   for (const c of cast) {
     if (paged(c)) c.y -= d;
-    if (c.kind === 'ladybird' && c.st === 'fly') (c.path[1] -= d), (c.path[3] -= d), (c.path[5] -= d);
+    if (isBug(c) && c.st === 'fly') (c.path[1] -= d), (c.path[3] -= d), (c.path[5] -= d);
     if (c.kind === 'jellyfish' && !c.asleep && !reduced && c.st !== 'held') c.y -= 0.25 * clamp(d, -40, 40);
   }
   if (!raf) draw();
@@ -956,7 +965,7 @@ function bed(c: Critter, now = false) {
   if (c.kind === 'tiger') {
     go(c, 'nap');
     c.f = 'sleep1';
-  } else if (c.kind === 'ladybird') {
+  } else if (isBug(c)) {
     go(c, 'rest');
     c.f = 'rest';
   } else if (style(c) === 'walk' || style(c) === 'hop') {
@@ -976,7 +985,7 @@ function rouse(c: Critter) {
   if (c.kind === 'tiger') startle(c);
   else if (c.kind === 'jellyfish') (go(c, 'swim'), show(c, 'startle', 0.2));
   else if (c.kind === 'ghost') (go(c, 'float'), show(c, 'shy', 0.2), (c.a = 0.92), (c.next = T + 2));
-  else if (c.kind === 'ladybird') go(c, 'freeze');
+  else if (isBug(c)) go(c, 'freeze');
   else go(c, style(c) === 'flutter' ? 'fly' : 'sit', 1), (c.next = T);
 }
 
@@ -1360,8 +1369,8 @@ const tiger: Step = (c, dt, night) => {
       if (!inBand) go(c, 'sit', rnd(2, 4));
       else if (Math.abs(pcx - c.x) < 100 * k) go(c, 'wiggle', rnd(0.5, 0.9));
       return;
-    case 'stalk': { // creeping up on the ladybird
-      const bug = find('ladybird');
+    case 'stalk': { // creeping up on a bug
+      const bug = prey;
       if (!bug || !reach(c, bug)) return go(c, 'sit', 1.5);
       const bx = bug.x + bug.w / 2 - c.w / 2;
       face(bug.x + bug.w / 2);
@@ -1380,8 +1389,8 @@ const tiger: Step = (c, dt, night) => {
         face(ptr.x);
       }
       if (c.t >= c.dur) {
-        // As high as what it's after (the pointer, the ladybird), from just over its own height up to five times it
-        const bug = find('ladybird');
+        // As high as what it's after (the pointer, a bug), from just over its own height up to five times it
+        const bug = prey;
         const aim = c.hunt === 0 ? ptr.y : c.hunt === 1 && bug ? bug.y + bug.h / 2 : f;
         const g = 1100 * k;
         go(c, 'leap');
@@ -1608,7 +1617,7 @@ function place(c: Critter, x: number, y: number) {
   c.y = grid(best.y - c.h) - best.d * scrollY;
 }
 
-// Can the tiger get at the ladybird? Somewhere near, low enough to pounce at.
+// Can the tiger get at this bug? Somewhere near, low enough to pounce at.
 const reach = (tg: Critter, bug: Critter) => {
   if (!tg.pl || (bug.st !== 'crawl' && bug.st !== 'rest')) return false;
   const f = feet(tg.pl);
@@ -1621,9 +1630,20 @@ const reach = (tg: Critter, bug: Critter) => {
 function hide(c: Critter, fly = false) {
   const ps = plats.filter((p) => !floor(p) && p.r - p.l > c.w + 8);
   if (!ps.length) return go(c, 'hide');
-  const p = ps[Math.floor(Math.random() * ps.length)];
-  const x = rnd(p.l + 2, p.r - c.w - 2);
-  const y = grid(p.y - c.h) - p.d * scrollY;
+  // Somewhere no other bug is (a flying one counts where it will land)
+  let p: Plat;
+  let x: number;
+  let tries = 0;
+  do {
+    p = ps[Math.floor(Math.random() * ps.length)];
+    x = rnd(p.l + 2, p.r - c.w - 2);
+  } while (tries++ < 8 && cast.some((b) => b !== c && isBug(b) && b.pl === p && Math.abs((b.st === 'fly' ? b.path[4] : b.x) - x) < 9 * q));
+  // At rest it's drawn on its side, so it stands as tall as its frame is
+  // wide, less any empty columns at its edges
+  const g = (CAST[c.kind].frames as Record<string, string[]>).rest;
+  let e = 0;
+  while (e < 3 && g.every((r) => r[e] === '.' && r[r.length - 1 - e] === '.')) e++;
+  const y = grid(p.y - (g[0].length - e) * q) - p.d * scrollY;
   c.pl = p;
   c.dir = Math.random() < 0.5 ? 1 : -1;
   if (fly) return flyTo(c, x, y);
@@ -1632,7 +1652,7 @@ function hide(c: Critter, fly = false) {
   go(c, 'rest', rnd(4, 10));
 }
 
-const ladybird: Step = (c, dt, night) => {
+const bug: Step = (c, dt, night) => {
   const near = ptr.on && Math.hypot(ptr.x - (c.x + c.w / 2), ptr.y - (c.y + c.h / 2)) < 60;
   const [, vt, , vb] = view();
   // Pounced on, or rushed: off to hide somewhere else
@@ -1672,6 +1692,8 @@ const ladybird: Step = (c, dt, night) => {
       c.x += c.dir * 5 * (q / 3) * dt;
       const p = c.pl;
       if (p && (c.x < p.l || c.x > p.r - c.w)) (c.x = clamp(c.x, p.l, p.r - c.w)), (c.dir = -c.dir);
+      // and turns back rather than walk into another bug
+      if (cast.some((b) => b !== c && isBug(b) && b.pl === p && b.st !== 'fly' && Math.abs(b.x - c.x) < 9 * q && (b.x - c.x) * c.dir > 0)) c.dir = -c.dir;
       if (c.t > c.dur) go(c, 'rest', rnd(4, 10));
       return;
     }
@@ -1812,7 +1834,7 @@ const flutter: Step = (c, dt, night) => {
 
 // Which way of getting about each critter has
 const stepOf = (c: Critter): Step =>
-  c.kind === 'jellyfish' ? jellyfish : c.kind === 'tiger' ? tiger : c.kind === 'ladybird' ? ladybird : c.kind === 'ghost' ? ghost : style(c) === 'flutter' ? flutter : walker;
+  c.kind === 'jellyfish' ? jellyfish : c.kind === 'tiger' ? tiger : isBug(c) ? bug : c.kind === 'ghost' ? ghost : style(c) === 'flutter' ? flutter : walker;
 
 
 
@@ -1820,16 +1842,17 @@ const stepOf = (c: Critter): Step =>
 function social(night: boolean) {
   const g = find('ghost');
   const tg = find('tiger');
-  const bug = find('ladybird');
   if (night || !tg) return;
+  const near = cast.find((b) => isBug(b) && reach(tg, b));
   // The ghost sneaks up on the napping tiger and boos it, now and then
   if (mode === 'margins' && g && g.st === 'float' && tg.st === 'nap' && tg.t > 8 && T - lastStim > 5 && T - lastBoo > 90 && boos < 2) {
     go(g, 'stalkG');
     lastBoo = T;
     boos++;
   }
-  // The tiger hunts the ladybird, and always misses
-  if (bug && !tg.fast && !tg.resume && (tg.st === 'sit' || tg.st === 'walk') && T - lastHunt > 8 && reach(tg, bug)) {
+  // The tiger hunts a bug that's close, and always misses
+  if (near && !tg.fast && !tg.resume && (tg.st === 'sit' || tg.st === 'walk') && T - lastHunt > 8) {
+    prey = near;
     go(tg, 'stalk');
     tg.hunt = 1;
     lastHunt = T;
@@ -1908,7 +1931,7 @@ function onMove(e: PointerEvent) {
   ptr.y = y;
   ptr.t = now;
   if (Math.hypot(x - ptr.ax, y - ptr.ay) > 20) (ptr.ax = x), (ptr.ay = y), (ptr.at = now);
-  if (down && !held && down.c && down.type !== 'touch' && !reduced && down.c.kind !== 'ladybird' && Math.hypot(x - down.x, y - down.y) > 4) grab(down.c);
+  if (down && !held && down.c && down.type !== 'touch' && !reduced && !isBug(down.c) && Math.hypot(x - down.x, y - down.y) > 4) grab(down.c);
   if (held) {
     held.tx = x - down!.dx;
     held.ty = y - down!.dy;
@@ -1957,7 +1980,7 @@ function onDown(e: PointerEvent) {
   down = { c, x, y, t: e.timeStamp, type: e.pointerType, dx: c ? x - c.x : 0, dy: c ? y - c.y : 0 };
   // Only a mouse or pen press on a critter you can pick up is kept from the
   // page. Touch is never prevented, so scrolling and selection always work.
-  if (c && !touch && !reduced && c.kind !== 'ladybird') {
+  if (c && !touch && !reduced && !isBug(c)) {
     e.preventDefault();
     try {
       root.setPointerCapture(e.pointerId);
@@ -2035,7 +2058,7 @@ function poke(c: Critter) {
   c.near = T;
   if (reduced) {
     // A change of picture, never movement
-    if (c.kind === 'ladybird') return found(c);
+    if (isBug(c)) return found(c);
     c.pose = 'happy';
     c.poseTo = Infinity;
     if (c.kind === 'tiger') puff('heart', c.x + c.w / 2 - 2.5 * q, c.y - 6 * q, 0, 1e9);
@@ -2073,7 +2096,7 @@ function poke(c: Critter) {
       go(c, 'happy', 0.9);
       puff('heart', c.x + c.w / 2 - 2.5 * q, c.y - 6 * q, -24 / 0.9, 0.9);
     }
-  } else if (c.kind === 'ladybird') found(c);
+  } else if (isBug(c)) found(c);
   else {
     go(c, 'happy');
     puff('heart', c.x + c.w / 2 - 2.5 * q, c.y - 6 * q, -24 / 0.9, 0.9);
@@ -2084,7 +2107,7 @@ function poke(c: Critter) {
 function found(c: Critter) {
   session.bugs++;
   const d = new Date();
-  showTag(c, `BUG ${pad(session.bugs)} FOUND\n${pad(d.getHours())}:${pad(d.getMinutes())}`, 2500);
+  showTag(c, `BUG ${pad(session.bugs)} FOUND\n${(BUGS as Record<string, string>)[c.kind]} · ${pad(d.getHours())}:${pad(d.getMinutes())}`, 2500);
   if (!reduced) go(c, 'found');
 }
 
@@ -2105,7 +2128,7 @@ function onFocus(e: FocusEvent) {
 function hover(c: Critter | null) {
   if (c === hoverC) return;
   hoverC = c;
-  root.style.cursor = c ? (c.kind === 'ladybird' || reduced ? 'pointer' : 'grab') : '';
+  root.style.cursor = c ? (isBug(c) || reduced ? 'pointer' : 'grab') : '';
   clearTimeout(tagTimer);
   tagTimer = window.setTimeout(() => showTag(c), c ? 600 : 1200);
 }
@@ -2201,7 +2224,7 @@ function draw() {
       const a = c.a * fade(c);
       if (dark) add(sprite(c, true), c.x, y, (T < c.glowTo ? 0.38 : c.kind === 'jellyfish' ? 0.16 : 0.12) * a);
       add(sprite(c), c.x, y, a);
-      if (c.asleep && c.kind !== 'ladybird') {
+      if (c.asleep && !isBug(c)) {
         const zx = c.kind === 'tiger' ? c.x + (c.dir > 0 ? c.w - 5 * q : 0) : c.x + c.w - 2 * q;
         add(glyph('z'), clamp(zx, q, (mode === 'ledge' ? ledge.w : vw) - 6 * q), c.y - (c.kind === 'tiger' ? q : 6 * q), 1);
       }
