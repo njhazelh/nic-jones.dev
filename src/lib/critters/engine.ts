@@ -1,4 +1,4 @@
-// The critters: jellyfish, a tiger cub, three bugs hiding somewhere on the
+// The critters: a jellyfish, a tiger cub, a bug hiding somewhere on the
 // page, Andrew the Bernese mountain dog, and a critter for the season or
 // holiday (a ghost in October). Decoration
 // only: every canvas is aria-hidden and painted under the page, so the text is
@@ -73,6 +73,7 @@ interface Plat {
   r: number;
   y: number;
   d: number;
+  k: number; // where it is: 1 the page title, 2 a subheading, 3 the rest of the content, 4 the header or footer, 9 a margin's floor
 }
 
 interface Canvas {
@@ -440,7 +441,7 @@ function terrain() {
       if (b.width < 2) continue;
       const base = b.top + sy + (m[0] || b.height * 0.8);
       ink.push([b.left + sx, base - m[1], b.right + sx, base + m[2]]);
-      tops.push([b.left + sx, b.right + sx, base - m[1] - 1]);
+      tops.push([b.left + sx, b.right + sx, base - m[1] - 1, el.closest('main h1') ? 1 : el.closest('main h2,main h3') ? 2 : el.closest('main') ? 3 : 4]);
     }
   }
   // Pictures and code blocks are ink, and some can be stood on
@@ -448,22 +449,22 @@ function terrain() {
     const b = box(el);
     if (!b.width) continue;
     ink.push([b.left + sx, b.top + sy, b.right + sx, b.bottom + sy]);
-    if (!el.matches('svg,table,iframe')) tops.push([b.left + sx, b.right + sx, b.top + sy - 1]);
+    if (!el.matches('svg,table,iframe')) tops.push([b.left + sx, b.right + sx, b.top + sy - 1, 3]);
   }
   // Rules drawn as borders (the lines between rows of links, table rules)
   for (const el of document.querySelectorAll('main *')) {
     const cs = getComputedStyle(el);
     const b = box(el);
     if (b.width < tw) continue;
-    if (parseFloat(cs.borderTopWidth) && cs.borderTopStyle !== 'none') tops.push([b.left + sx, b.right + sx, b.top + sy - 1]);
-    if (parseFloat(cs.borderBottomWidth) && cs.borderBottomStyle !== 'none') tops.push([b.left + sx, b.right + sx, b.bottom + sy - parseFloat(cs.borderBottomWidth) - 1]);
+    if (parseFloat(cs.borderTopWidth) && cs.borderTopStyle !== 'none') tops.push([b.left + sx, b.right + sx, b.top + sy - 1, 3]);
+    if (parseFloat(cs.borderBottomWidth) && cs.borderBottomStyle !== 'none') tops.push([b.left + sx, b.right + sx, b.bottom + sy - parseFloat(cs.borderBottomWidth) - 1, 3]);
   }
   // The ruler under the header, the rule over the footer, and the short rule
   // over each section number in the rail
   const hd = document.querySelector('.site-header');
   const ft = document.querySelector('.site-footer');
-  if (hd) tops.push([col.l, col.r, box(hd).bottom + sy - 2]);
-  if (ft && mode === 'margins') tops.push([col.l, col.r, box(ft).top + sy - 1]);
+  if (hd) tops.push([col.l, col.r, box(hd).bottom + sy - 2, 4]);
+  if (ft && mode === 'margins') tops.push([col.l, col.r, box(ft).top + sy - 1, 4]);
   for (const h of document.querySelectorAll('main h2')) {
     const ps = getComputedStyle(h, '::before');
     if (ps.content === 'none') continue;
@@ -473,7 +474,7 @@ function terrain() {
     const L = b.left + sx + (ps.position === 'absolute' ? parseFloat(ps.left) : 0);
     const T = b.top + sy + (ps.position === 'absolute' ? parseFloat(ps.top) + parseFloat(ps.borderTopWidth) + parseFloat(ps.paddingTop) : 0);
     ink.push([L, T, L + 3 * fs, T + 1.2 * fs]);
-    if (ps.position === 'absolute') tops.push([L, L + parseFloat(ps.width), b.top + sy + parseFloat(ps.top) - 1]);
+    if (ps.position === 'absolute') tops.push([L, L + parseFloat(ps.width), b.top + sy + parseFloat(ps.top) - 1, 2]);
   }
   ink.sort((a, b) => a[1] - b[1]);
   // Join pieces of one line (a link, a word in italics), then keep the runs with headroom
@@ -481,10 +482,10 @@ function terrain() {
   const lines: number[][] = [];
   for (const t of tops) {
     const m = lines[lines.length - 1];
-    if (m && Math.round(m[2] / 6) === Math.round(t[2] / 6) && t[0] - m[1] < 12) (m[1] = Math.max(m[1], t[1])), (m[2] = Math.min(m[2], t[2]));
+    if (m && Math.round(m[2] / 6) === Math.round(t[2] / 6) && t[0] - m[1] < 12) (m[1] = Math.max(m[1], t[1])), (m[2] = Math.min(m[2], t[2])), (m[3] = Math.min(m[3], t[3]));
     else lines.push([...t]);
   }
-  for (const [l, r, y] of lines) {
+  for (const [l, r, y, k] of lines) {
     if (y - th < 0) continue;
     let free = [[Math.max(l, 2), Math.min(r, vw - 2)]];
     for (const b of ink) {
@@ -493,18 +494,18 @@ function terrain() {
       free = free.flatMap(([a, c]) => [[a, Math.min(c, b[0] - 4)], [Math.max(a, b[2] + 4), c]]).filter(([a, c]) => c - a >= tw);
       if (!free.length) break;
     }
-    for (const [a, c] of free) if (c - a >= tw) plats.push({ l: a, r: c, y, d: 1 });
+    for (const [a, c] of free) if (c - a >= tw) plats.push({ l: a, r: c, y, d: 1, k });
   }
   plats.sort((a, b) => a.y - b.y);
   if (mode === 'ledge') {
     // Into the ledge's coordinates, which scroll with the page; the rule above the footer is the floor
     const { x, y } = ledge;
-    plats = plats.map((p) => ({ l: p.l - x, r: p.r - x, y: p.y - y, d: 0 }));
+    plats = plats.map((p) => ({ ...p, l: p.l - x, r: p.r - x, y: p.y - y, d: 0 }));
     ink = ink.map((b) => [b[0] - x, b[1] - y, b[2] - x, b[3] - y]);
-    plats.push((ground = { l: 0, r: ledge.w, y: floorY, d: 0 }));
+    plats.push((ground = { l: 0, r: ledge.w, y: floorY, d: 0, k: 4 }));
   }
   // And the bottom of the window in each margin, for a tiger thrown out there
-  else for (const z of sides) plats.push({ l: z.a, r: z.b, y: floorY, d: 0 });
+  else for (const z of sides) plats.push({ l: z.a, r: z.b, y: floorY, d: 0, k: 9 });
 }
 
 // Make (or reuse) the canvases for the current mode
@@ -710,7 +711,7 @@ function season(d = new Date()): Kind {
 // mode, otherwise with an entrance (first page) or at rest (resize, toggle).
 function spawn(world: typeof session.world | null, rest = false) {
   const B = 1 - session.sideA;
-  const [rt, rj1, rj2] = session.rare;
+  const [rt, rj1] = session.rare;
   cast = [];
   fx = [];
   down = held = hoverC = tagFor = null;
@@ -722,13 +723,11 @@ function spawn(world: typeof session.world | null, rest = false) {
   root.classList.remove('critters-grabbing');
   const S = season();
   const kinds = (Object.keys(BUGS) as Kind[]).filter((k) => k in CAST);
-  const bugs = (side: number) => [0, 1, 2].map(() => make(kinds[Math.floor(Math.random() * kinds.length)], side));
+  const bug1 = (side: number) => make(kinds[Math.floor(Math.random() * kinds.length)], side); // one a page, so it's a find
   if (mode === 'margins') {
-    cast.push(make('jellyfish', session.sideA, rj1));
-    if (Math.min(sides[0].b, vw - sides[1].a) + 16 >= 240) cast.push(make('jellyfish', B, rj2));
-    cast.push(make(S, B), make('tiger', B, rt), ...bugs(B));
+    cast.push(make('jellyfish', session.sideA, rj1), make(S, B), make('tiger', B, rt), bug1(B));
   } else if (mode === 'ledge') {
-    cast.push(make('tiger', 0, rt), ...bugs(0), make(S, 0), make('jellyfish', 0, rj1));
+    cast.push(make('tiger', 0, rt), bug1(0), make(S, 0), make('jellyfish', 0, rj1));
   }
   if (mode !== 'none' && 'andrew' in CAST) cast.push(make('andrew' as Kind, session.sideA));
   drawOrder = cast.filter(isBug).concat((['tiger', 'andrew', 'jellyfish', S] as Kind[]).flatMap((k) => cast.filter((c) => c.kind === k)));
@@ -738,10 +737,9 @@ function spawn(world: typeof session.world | null, rest = false) {
     if (fits) {
       const [fx_, fy, asleep, side, dir] = world!.list[i];
       c.dir = dir;
-      // The tiger comes back to its place in the window; the bug finds a new
-      // hiding place on every page
-      if (c.kind === 'tiger') place(c, view()[0] + fx_ * vw, view()[1] + fy * vh);
-      else if (!isBug(c)) {
+      // The tiger greets every page from its title (napping, if it was); the
+      // bug finds a new hiding place
+      if (c.kind !== 'tiger' && !isBug(c)) {
         c.side = side;
         const z = sides[side];
         c.x = z.a + fx_ * (z.b - z.a);
@@ -786,12 +784,13 @@ function home(c: Critter) {
     c.y = ledged ? ledge.h + 2 : vh * 0.25;
     if (ledged) c.asleep = true;
   } else if (c.kind === 'tiger') {
-    // On the highest place in view: the top of the page, on a first visit
+    // On the page's focal point in view: the title, else a subheading, else
+    // the highest line of the content
     go(c, 'sit', rnd(3, 8));
     c.f = 'sit';
     c.near = T;
     c.next = T + rnd(2, 5);
-    const p = plats.filter((p) => !floor(p) && seen(p)).sort((a, b) => a.y - b.y)[0];
+    const p = plats.filter((p) => !floor(p) && seen(p)).sort((a, b) => a.k - b.k || a.y - b.y)[0];
     place(c, p ? (p.l + p.r) / 2 : 0, p ? feet(p) : vh);
   } else if (isBug(c)) hide(c);
   else {
@@ -812,11 +811,9 @@ function home(c: Critter) {
 function enter(c: Critter) {
   const ledged = mode === 'ledge';
   if (c.kind === 'tiger') {
-    // Drops in from above onto the top of the page
-    c.wait = 0.6;
-    c.y = view()[1] - c.h - 8;
-    c.pl = null;
-    go(c, 'fall');
+    // Already on the title when the page settles, pleased to see you
+    c.wait = 0.8;
+    go(c, 'happy', 0.8);
   } else if (isBug(c)) return;
   else if (style(c) && c.kind !== 'ghost') {
     // The season's critter comes in from its edge of the window (on a phone,

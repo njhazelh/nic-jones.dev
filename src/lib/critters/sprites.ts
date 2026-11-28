@@ -1973,8 +1973,8 @@ export const SEASONAL = {
   bunny: { style: 'hop', name: 'BUNNY', verb: 'HOPPING' },
 } satisfies Record<string, { style: 'float' | 'walk' | 'hop' | 'flutter'; name: string; verb: string }>;
 
-/** The bugs left in on purpose: three hide on every page, each one of these
- * at random, and the found tag says which. */
+/** The bugs left in on purpose: one hides on every page, one of these at
+ * random, and the found tag says which. */
 export const BUGS = {
   ladybird: 'LADYBIRD',
   spider: 'SPIDER',
